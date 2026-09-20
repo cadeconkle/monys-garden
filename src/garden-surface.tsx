@@ -47,7 +47,7 @@ export function GardenSurface({
     <main className="surface">
       <h1>Garden</h1>
       <ForecastGlance weather={weather} />
-      <CareList garden={garden} weather={weather} onMarkCareEventDone={onMarkCareEventDone} />
+      <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
       {plantings.length === 0 ? (
         <>
           <p>Nothing is in the ground yet.</p>
@@ -98,14 +98,12 @@ function glanceLine(label: string | null, day: ForecastDay): string {
 
 function CareList({
   garden,
-  weather,
   onMarkCareEventDone,
 }: {
   garden: GardenBook;
-  weather?: GrowingPlaceForecast;
   onMarkCareEventDone: (careEventId: string) => void;
 }) {
-  const due = dueCareEvents(garden, weather);
+  const due = dueCareEvents(garden);
   if (due.length === 0) {
     return null;
   }

@@ -14,3 +14,9 @@ export const lockScreenSubscriptions = pgTable("lock_screen_subscriptions", {
   gardenerEmail: text("gardener_email").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const gardenBook = pgTable("garden_book", {
+  id: integer().primaryKey(),
+  book: text().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});

@@ -1,23 +1,16 @@
-import type { LockScreenNotice } from "./garden";
-
-export type { LockScreenNotice };
-
-export type LockScreen = {
-  offer?(): void | Promise<void>;
-  sync(notices: readonly LockScreenNotice[]): void | Promise<void>;
+export type LockScreenCare = {
+  id: string;
+  label: string;
 };
 
-export function createLockScreen(): LockScreen & {
-  due(): readonly LockScreenNotice[];
-} {
-  let due: LockScreenNotice[] = [];
+export type LockScreen = {
+  offer(): void | Promise<void>;
+  sync(careEvents: readonly LockScreenCare[]): void | Promise<void>;
+};
 
+export function createLockScreen(): LockScreen {
   return {
-    sync(notices) {
-      due = [...notices];
-    },
-    due() {
-      return due;
-    },
+    offer() {},
+    sync() {},
   };
 }

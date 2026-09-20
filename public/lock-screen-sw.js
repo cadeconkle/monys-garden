@@ -1,5 +1,15 @@
+importScripts("/lock-screen-care.js");
+
 self.addEventListener("push", (event) => {
   event.waitUntil(syncLockScreen(event));
+});
+
+self.addEventListener("message", (event) => {
+  const careEvents = event.data?.careEvents;
+  if (!Array.isArray(careEvents)) {
+    return;
+  }
+  event.waitUntil(showLockScreenCare(self.registration, careEvents));
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -13,27 +23,8 @@ async function syncLockScreen(event) {
   }
 
   const payload = event.data.json();
-  const notices = Array.isArray(payload.notices) ? payload.notices : [];
-  const shown = await self.registration.getNotifications();
-  const due = new Set(notices.map((notice) => notice.id));
-
-  for (const current of shown) {
-    if (current.tag && !due.has(current.tag)) {
-      current.close();
-    }
-  }
-
-  await Promise.all(
-    notices.map((notice) =>
-      self.registration.showNotification("Mony's Garden", {
-        tag: notice.id,
-        body: notice.label,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        data: { id: notice.id },
-      }),
-    ),
-  );
+  const careEvents = Array.isArray(payload.careEvents) ? payload.careEvents : [];
+  await showLockScreenCare(self.registration, careEvents);
 }
 
 async function openGarden() {

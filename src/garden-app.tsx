@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { catalogTechniques, thinCatalog, type Technique, type Variety } from "./catalog";
 import {
@@ -12,10 +12,11 @@ import {
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
 import {
-  dueLockScreenNotices,
+  applyWeatherToGarden,
+  careEventLabel,
+  dueCareEvents,
   emptyGarden,
   endPlantingAsFailed,
-  ensureFrostCareEvent,
   markCareEventDone,
   nameBed,
   overrideSoil,
@@ -23,6 +24,7 @@ import {
   startPlanting,
   type GardenBook,
 } from "./garden";
+import { createMemoryGardenBook, type GardenBookStore } from "./garden-book";
 import { GardenSurface } from "./garden-surface";
 import { Gate } from "./gate";
 import {
@@ -37,23 +39,23 @@ import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
 import { curatedShops, type Shop } from "./shops";
 import { ShopsSurface } from "./shops-surface";
-import type { GrowingPlaceForecast } from "./weather";
+import type { GrowingPlaceForecast } from "./forecast";
 
 export function GardenApp({
   household,
   catalog = thinCatalog,
   techniques = catalogTechniques,
   shops = curatedShops,
-  weather,
   loadForecast,
+  gardenBook,
   lockScreen,
 }: {
   household: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
-  weather?: GrowingPlaceForecast;
   loadForecast?: () => Promise<GrowingPlaceForecast>;
+  gardenBook?: GardenBookStore;
   lockScreen?: LockScreen;
 }) {
   const [ready, setReady] = useState(false);
@@ -63,16 +65,16 @@ export function GardenApp({
   const [favorites] = useState(createFavorites);
   const [lists] = useState(createLists);
   const [, setRevision] = useState(0);
+  const [localBook] = useState(createMemoryGardenBook);
+  const book = gardenBook ?? localBook;
   const [garden, setGarden] = useState<GardenBook>(emptyGarden);
-  const [forecast, setForecast] = useState(weather);
+  const [gardenReady, setGardenReady] = useState(!gardenBook);
+  const [forecast, setForecast] = useState<GrowingPlaceForecast | undefined>(undefined);
+  const forecastRef = useRef(forecast);
+  forecastRef.current = forecast;
   const planted = plantedVarietyNames(garden);
 
   useEffect(() => {
-    if (weather) {
-      setForecast(weather);
-      return;
-    }
-
     if (!loadForecast) {
       return;
     }
@@ -94,7 +96,7 @@ export function GardenApp({
     return () => {
       cancelled = true;
     };
-  }, [weather, loadForecast]);
+  }, [loadForecast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,17 +125,54 @@ export function GardenApp({
     if (!gardener) {
       return;
     }
-    void lockScreen?.offer?.();
-  }, [gardener, lockScreen]);
+
+    if (!gardenBook) {
+      setGardenReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    gardenBook.load().then((stored) => {
+      if (cancelled) {
+        return;
+      }
+      setGarden(applyWeatherToGarden(stored, forecastRef.current));
+      setGardenReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gardener, gardenBook]);
+
+  useEffect(() => {
+    if (!forecast) {
+      return;
+    }
+    setGarden((current) => applyWeatherToGarden(current, forecast));
+  }, [forecast]);
 
   useEffect(() => {
     if (!gardener) {
       return;
     }
-    void lockScreen?.sync(dueLockScreenNotices(garden, forecast));
-  }, [gardener, garden, forecast, lockScreen]);
+    void lockScreen?.offer();
+  }, [gardener, lockScreen]);
 
-  if (!ready) {
+  useEffect(() => {
+    if (!gardener || !gardenReady) {
+      return;
+    }
+    void book.save(garden);
+    void lockScreen?.sync(
+      dueCareEvents(garden).map((event) => ({
+        id: event.id,
+        label: careEventLabel(event),
+      })),
+    );
+  }, [gardener, garden, gardenReady, book, lockScreen]);
+
+  if (!ready || (gardener && !gardenReady)) {
     return (
       <main className="gate">
         <p className="place">{household.growingPlace.name}</p>
@@ -168,6 +207,13 @@ export function GardenApp({
     );
   }
 
+  const commitGarden = (update: (current: GardenBook) => GardenBook) => {
+    setGarden((current) => {
+      const next = update(current);
+      return forecast ? applyWeatherToGarden(next, forecast) : next;
+    });
+  };
+
   return (
     <Shell growingPlace={household.growingPlace.name} gardener={gardener}>
       <Routes>
@@ -178,10 +224,10 @@ export function GardenApp({
               catalog={catalog}
               garden={garden}
               weather={forecast}
-              onNameBed={(area, name) => setGarden((current) => nameBed(current, area, name))}
+              onNameBed={(area, name) => commitGarden((current) => nameBed(current, area, name))}
               onStartPlanting={(planting) => {
                 let plantingError: string | null = null;
-                setGarden((current) => {
+                commitGarden((current) => {
                   const result = startPlanting(current, planting);
                   plantingError = result.error;
                   return result.garden;
@@ -189,18 +235,16 @@ export function GardenApp({
                 return plantingError;
               }}
               onSetStay={(plantingId, stay) =>
-                setGarden((current) => setStay(current, plantingId, stay))
+                commitGarden((current) => setStay(current, plantingId, stay))
               }
               onOverrideSoil={(area, bedName, soil) =>
-                setGarden((current) => overrideSoil(current, area, bedName, soil))
+                commitGarden((current) => overrideSoil(current, area, bedName, soil))
               }
               onMarkCareEventDone={(careEventId) =>
-                setGarden((current) =>
-                  markCareEventDone(ensureFrostCareEvent(current, forecast), careEventId),
-                )
+                commitGarden((current) => markCareEventDone(current, careEventId))
               }
               onEndPlantingAsFailed={(plantingId) =>
-                setGarden((current) => endPlantingAsFailed(current, plantingId))
+                commitGarden((current) => endPlantingAsFailed(current, plantingId))
               }
             />
           }

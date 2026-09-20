@@ -3,10 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Technique, Variety } from "./catalog";
 import { GardenApp } from "./garden-app";
+import type { GardenBookStore } from "./garden-book";
 import { createHousehold, type Household } from "./household";
 import type { LockScreen } from "./lock-screen";
 import type { Shop } from "./shops";
-import type { GrowingPlaceForecast } from "./weather";
+import type { GrowingPlaceForecast } from "./forecast";
 
 export function openGarden(options?: {
   household?: Household;
@@ -14,6 +15,8 @@ export function openGarden(options?: {
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
   weather?: GrowingPlaceForecast;
+  loadForecast?: () => Promise<GrowingPlaceForecast>;
+  gardenBook?: GardenBookStore;
   lockScreen?: LockScreen;
 }): RenderResult & {
   household: Household;
@@ -21,6 +24,9 @@ export function openGarden(options?: {
   const household = options?.household ?? createHousehold();
   const host = document.createElement("div");
   document.body.append(host);
+  const loadForecast =
+    options?.loadForecast ??
+    (options?.weather ? async () => options.weather as GrowingPlaceForecast : undefined);
   const view = render(
     <MemoryRouter>
       <GardenApp
@@ -28,7 +34,8 @@ export function openGarden(options?: {
         catalog={options?.catalog}
         techniques={options?.techniques}
         shops={options?.shops}
-        weather={options?.weather}
+        loadForecast={loadForecast}
+        gardenBook={options?.gardenBook}
         lockScreen={options?.lockScreen}
       />
     </MemoryRouter>,

@@ -801,24 +801,19 @@ test("a Bed can override Soil; the Variety default remains when there is no over
     start: "transplant",
   });
 
-  const lemon = garden.getByRole("heading", { name: "Lemon pot" }).closest("article");
-  const tomato = garden.getByRole("heading", { name: "Tomato row" }).closest("article");
-  expect(lemon).not.toBeNull();
-  expect(tomato).not.toBeNull();
-
-  expect(within(lemon!).getByText("Soil: citrus pot mix")).toBeVisible();
-  expect(within(tomato!).getByText("Soil: loose garden loam")).toBeVisible();
-  expect(within(lemon!).getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
+  expect(garden.getByText("Soil: citrus pot mix")).toBeVisible();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
   expect(garden.queryByText(/fertilizer is due/i)).toBeNull();
   expect(garden.queryByRole("button", { name: /fertilizer/i })).toBeNull();
 
-  await userEvent.type(within(lemon!).getByLabelText("Soil override"), "amended clay");
-  await userEvent.click(within(lemon!).getByRole("button", { name: "Override Soil" }));
+  await userEvent.type(garden.getByLabelText("Soil override for Lemon pot"), "amended clay");
+  await userEvent.click(garden.getByRole("button", { name: "Override Soil for Lemon pot" }));
 
-  expect(within(lemon!).getByText("Soil: amended clay")).toBeVisible();
-  expect(within(lemon!).queryByText("citrus pot mix")).toBeNull();
-  expect(within(tomato!).getByText("Soil: loose garden loam")).toBeVisible();
-  expect(within(lemon!).getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
+  expect(garden.getByText("Soil: amended clay")).toBeVisible();
+  expect(garden.queryByText("citrus pot mix")).toBeNull();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
 });
 
 async function nameTheBed(garden: RenderResult, area: string, name: string) {

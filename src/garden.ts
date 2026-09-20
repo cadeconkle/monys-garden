@@ -166,11 +166,11 @@ export function currentPlantingsByArea(garden: GardenBook): {
       {
         area,
         beds: names.map((name) => {
-          const record = garden.beds.find((bed) => bed.area === area && bed.name === name);
+          const bed = garden.beds.find((item) => item.area === area && item.name === name);
           return {
             name,
-            plan: record?.plan ?? null,
-            soil: record?.soil ?? null,
+            plan: bed?.plan ?? null,
+            soil: bed?.soil ?? null,
             plantings: here.filter((item) => item.bedName === name),
           };
         }),

@@ -95,6 +95,7 @@ function PlantingList({
                   ))}
                 </ul>
                 <OverrideSoilForm
+                  bedName={bed.name}
                   onOverride={(next) => onOverrideSoil(area, bed.name, next)}
                 />
               </article>
@@ -106,7 +107,13 @@ function PlantingList({
   );
 }
 
-function OverrideSoilForm({ onOverride }: { onOverride: (soil: string) => void }) {
+function OverrideSoilForm({
+  bedName,
+  onOverride,
+}: {
+  bedName: string;
+  onOverride: (soil: string) => void;
+}) {
   const [soil, setSoil] = useState("");
 
   return (
@@ -122,14 +129,14 @@ function OverrideSoilForm({ onOverride }: { onOverride: (soil: string) => void }
       }}
     >
       <label>
-        Soil override
+        Soil override for {bedName}
         <input
           name="soilOverride"
           value={soil}
           onChange={(event) => setSoil(event.target.value)}
         />
       </label>
-      <button type="submit">Override Soil</button>
+      <button type="submit">Override Soil for {bedName}</button>
     </form>
   );
 }

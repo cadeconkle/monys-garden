@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { Technique, Variety } from "./catalog";
 import { GardenApp } from "./garden-app";
 import { createHousehold, type Household } from "./household";
+import type { LockScreen } from "./lock-screen";
 import type { Shop } from "./shops";
 
 export function openGarden(options?: {
@@ -11,6 +12,7 @@ export function openGarden(options?: {
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
+  lockScreen?: LockScreen;
 }): RenderResult & {
   household: Household;
 } {
@@ -24,6 +26,7 @@ export function openGarden(options?: {
         catalog={options?.catalog}
         techniques={options?.techniques}
         shops={options?.shops}
+        lockScreen={options?.lockScreen}
       />
     </MemoryRouter>,
     { container: host, baseElement: host },

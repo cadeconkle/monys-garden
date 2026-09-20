@@ -1,7 +1,8 @@
-import { fireEvent, within, type RenderResult } from "@testing-library/react";
+import { fireEvent, waitFor, within, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { VarietyFinish } from "./catalog";
+import type { Variety, VarietyFinish } from "./catalog";
 import { createHousehold } from "./household";
+import { createLockScreen } from "./lock-screen";
 import { openAsGardener, openGarden } from "./open-garden";
 
 async function goToCatalog(garden: RenderResult) {
@@ -1168,6 +1169,119 @@ test("set aside seeds uses the Variety's seed-save count, not a made-up number",
   expect(garden.getByText("Set aside 47 seeds of Celebrity tomato")).toBeVisible();
   expect(garden.queryByText("Set aside 12 seeds of Celebrity tomato")).toBeNull();
   expect(garden.queryByText("Set aside seeds of Celebrity tomato")).toBeNull();
+});
+
+test("an open Care event is due as a lock-screen notice", async () => {
+  const lockScreen = createLockScreen();
+  const garden = openGarden({
+    lockScreen,
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  await waitFor(() => {
+    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
+      "Water Celebrity tomato in Tomato row",
+      "Harvest Celebrity tomato in Tomato row",
+      "Replant Celebrity tomato in Tomato row",
+      "Set aside seeds of Celebrity tomato",
+    ]);
+  });
+});
+
+test("marking a Care event done clears the lock-screen notice", async () => {
+  const lockScreen = createLockScreen();
+  const garden = openGarden({
+    lockScreen,
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  const water = garden.getByText("Water Celebrity tomato in Tomato row").closest("li");
+  expect(water).not.toBeNull();
+  await userEvent.click(within(water!).getByRole("button", { name: "Mark done" }));
+
+  expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  await waitFor(() => {
+    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
+      "Harvest Celebrity tomato in Tomato row",
+      "Replant Celebrity tomato in Tomato row",
+      "Set aside seeds of Celebrity tomato",
+    ]);
+  });
+});
+
+test("a second profile does not receive a lock-screen notice", async () => {
+  const household = createHousehold();
+  const catalog: Variety[] = [
+    {
+      name: "Celebrity tomato",
+      category: "vegetables",
+      kind: "tomato",
+      fit: "fair",
+      why: "Sets fruit here, then stalls in July humidity.",
+    },
+  ];
+  const gardenerLockScreen = createLockScreen();
+  const strangerLockScreen = createLockScreen();
+  const first = openGarden({ household, catalog, lockScreen: gardenerLockScreen });
+
+  await openAsGardener(first);
+  await nameTheBed(first, "Back", "Tomato row");
+  await startThePlanting(first, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  await waitFor(() => {
+    expect(gardenerLockScreen.due().map((notice) => notice.label)).toContain(
+      "Water Celebrity tomato in Tomato row",
+    );
+  });
+
+  const stranger = openGarden({ household, catalog, lockScreen: strangerLockScreen });
+  await openAsGardener(stranger, {
+    email: "cade@garden.test",
+    password: "another-notebook",
+  });
+
+  expect(stranger.getByRole("alert")).toHaveTextContent("There is only one Gardener.");
+  expect(strangerLockScreen.due()).toEqual([]);
 });
 
 test("ending a Planting early as failed stops further water Care events", async () => {

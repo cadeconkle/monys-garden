@@ -12,6 +12,7 @@ import {
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
 import {
+  dueLockScreenNotices,
   emptyGarden,
   endPlantingAsFailed,
   markCareEventDone,
@@ -27,6 +28,7 @@ import {
   type Gardener,
   type Household,
 } from "./household";
+import type { LockScreen } from "./lock-screen";
 import { createLists } from "./lists";
 import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
@@ -38,11 +40,13 @@ export function GardenApp({
   catalog = thinCatalog,
   techniques = catalogTechniques,
   shops = curatedShops,
+  lockScreen,
 }: {
   household: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
+  lockScreen?: LockScreen;
 }) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
@@ -76,6 +80,13 @@ export function GardenApp({
       cancelled = true;
     };
   }, [household]);
+
+  useEffect(() => {
+    if (!gardener) {
+      return;
+    }
+    void lockScreen?.sync(dueLockScreenNotices(garden));
+  }, [gardener, garden, lockScreen]);
 
   if (!ready) {
     return (

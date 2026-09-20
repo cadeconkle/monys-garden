@@ -263,6 +263,39 @@ button:disabled {
   letter-spacing: -0.02em;
 }
 
+.photoreal {
+  margin: 1.2rem 0 1.4rem;
+}
+
+.photoreal img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.surface h2 {
+  margin: 1.2rem 0 0.35rem;
+  font-family: "Bricolage Grotesque", "Avenir Next", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.buy-place {
+  margin: 1.2rem 0;
+}
+
+.shop-kind {
+  margin: 0.3rem 0 0;
+  color: var(--quiet);
+}
+
+.shop-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.2rem;
+}
+
 .fit-filter {
   margin: 0 0 1.2rem;
   border: 0;

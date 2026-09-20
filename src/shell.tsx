@@ -23,6 +23,7 @@ export function Shell({ growingPlace, gardener, children }: ShellProps) {
         <NavLink to="/" end>
           Garden
         </NavLink>
+        <NavLink to="/shops">Shops</NavLink>
       </nav>
       {children}
     </div>

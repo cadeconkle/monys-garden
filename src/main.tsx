@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { GardenApp } from "./garden-app";
 import { createHousehold } from "./household";
 import { createNetlifyHousehold } from "./netlify-household";
+import { loadGrowingPlaceForecast } from "./weather";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -16,6 +17,7 @@ createRoot(root).render(
     <BrowserRouter>
       <GardenApp
         household={import.meta.env.PROD ? createNetlifyHousehold() : createHousehold()}
+        loadForecast={loadGrowingPlaceForecast}
       />
     </BrowserRouter>
   </StrictMode>,

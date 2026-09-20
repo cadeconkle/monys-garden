@@ -5,12 +5,14 @@ import type { Technique, Variety } from "./catalog";
 import { GardenApp } from "./garden-app";
 import { createHousehold, type Household } from "./household";
 import type { Shop } from "./shops";
+import type { GrowingPlaceForecast } from "./weather";
 
 export function openGarden(options?: {
   household?: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
+  weather?: GrowingPlaceForecast;
 }): RenderResult & {
   household: Household;
 } {
@@ -24,6 +26,7 @@ export function openGarden(options?: {
         catalog={options?.catalog}
         techniques={options?.techniques}
         shops={options?.shops}
+        weather={options?.weather}
       />
     </MemoryRouter>,
     { container: host, baseElement: host },

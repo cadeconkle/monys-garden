@@ -14,6 +14,7 @@ import { FavoritesPage } from "./favorites-surface";
 import {
   emptyGarden,
   endPlantingAsFailed,
+  gardenWithForecast,
   markCareEventDone,
   nameBed,
   startPlanting,
@@ -32,17 +33,25 @@ import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
 import { curatedShops, type Shop } from "./shops";
 import { ShopsSurface } from "./shops-surface";
+import {
+  fallbackGrowingPlaceForecast,
+  type GrowingPlaceForecast,
+} from "./weather";
 
 export function GardenApp({
   household,
   catalog = thinCatalog,
   techniques = catalogTechniques,
   shops = curatedShops,
+  weather,
+  loadForecast,
 }: {
   household: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
+  weather?: GrowingPlaceForecast;
+  loadForecast?: () => Promise<GrowingPlaceForecast>;
 }) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
@@ -52,7 +61,37 @@ export function GardenApp({
   const [lists] = useState(createLists);
   const [, setRevision] = useState(0);
   const [garden, setGarden] = useState<GardenBook>(emptyGarden);
+  const [forecast, setForecast] = useState(weather);
   const planted = plantedVarietyNames(garden);
+
+  useEffect(() => {
+    if (weather) {
+      setForecast(weather);
+      return;
+    }
+
+    if (!loadForecast) {
+      return;
+    }
+
+    let cancelled = false;
+    loadForecast().then(
+      (loaded) => {
+        if (!cancelled) {
+          setForecast(loaded);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setForecast(fallbackGrowingPlaceForecast());
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [weather, loadForecast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +160,7 @@ export function GardenApp({
             <GardenSurface
               catalog={catalog}
               garden={garden}
+              weather={forecast}
               onNameBed={(area, name) => setGarden((current) => nameBed(current, area, name))}
               onStartPlanting={(planting) => {
                 let plantingError: string | null = null;
@@ -132,7 +172,9 @@ export function GardenApp({
                 return plantingError;
               }}
               onMarkCareEventDone={(careEventId) =>
-                setGarden((current) => markCareEventDone(current, careEventId))
+                setGarden((current) =>
+                  markCareEventDone(gardenWithForecast(current, forecast), careEventId),
+                )
               }
               onEndPlantingAsFailed={(plantingId) =>
                 setGarden((current) => endPlantingAsFailed(current, plantingId))
@@ -156,6 +198,7 @@ export function GardenApp({
               onFavoritesChange={() => setRevision((n) => n + 1)}
               lists={lists}
               onListsChange={() => setRevision((n) => n + 1)}
+              weather={forecast}
             />
           }
         />

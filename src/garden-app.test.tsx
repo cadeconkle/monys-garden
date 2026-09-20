@@ -703,7 +703,7 @@ test("a later season in the same Bed is a new Planting; the old Planting is unch
   expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
 });
 
-test("a Planting produces water, harvest, replant, and set-aside-seeds Care events", async () => {
+test("a Planting produces water, harvest, replant, and set aside seeds Care events", async () => {
   const garden = openGarden({
     catalog: [
       {
@@ -764,7 +764,7 @@ test("the Gardener can mark a Care event done and it leaves the due list", async
   expect(garden.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
 });
 
-test("set-aside-seeds uses the Variety's seed-save count, not a made-up number", async () => {
+test("set aside seeds uses the Variety's seed-save count, not a made-up number", async () => {
   const garden = openGarden({
     catalog: [
       {

@@ -9,8 +9,8 @@ export type Start = (typeof STARTS)[number];
 export const PLANTING_ENDS = ["open", "harvested", "winter-kill", "failed"] as const;
 export type PlantingEnd = (typeof PLANTING_ENDS)[number];
 
-export const CARE_KINDS = ["water", "harvest", "replant", "set-aside-seeds"] as const;
-export type CareKind = (typeof CARE_KINDS)[number];
+export const CARE_EVENT_TYPES = ["water", "harvest", "replant", "set-aside-seeds"] as const;
+export type CareEventType = (typeof CARE_EVENT_TYPES)[number];
 
 export type Bed = {
   area: Area;
@@ -30,7 +30,7 @@ export type Planting = {
 
 export type CareEvent = {
   id: string;
-  kind: CareKind;
+  type: CareEventType;
   plantingId: string;
   varietyName: string;
   bedName: string;
@@ -148,7 +148,7 @@ export function dueCareEvents(garden: GardenBook): CareEvent[] {
     if (event.done) {
       return false;
     }
-    if (event.kind === "water" && failedIds.has(event.plantingId)) {
+    if (event.type === "water" && failedIds.has(event.plantingId)) {
       return false;
     }
     return true;
@@ -156,25 +156,25 @@ export function dueCareEvents(garden: GardenBook): CareEvent[] {
 }
 
 export function careEventLabel(event: CareEvent): string {
-  if (event.kind === "set-aside-seeds") {
+  if (event.type === "set-aside-seeds") {
     if (event.seedSaveCount != null) {
       return `Set aside ${event.seedSaveCount} seeds of ${event.varietyName}`;
     }
     return `Set aside seeds of ${event.varietyName}`;
   }
 
-  const verb = event.kind === "water" ? "Water" : event.kind === "harvest" ? "Harvest" : "Replant";
+  const verb = event.type === "water" ? "Water" : event.type === "harvest" ? "Harvest" : "Replant";
   return `${verb} ${event.varietyName} in ${event.bedName}`;
 }
 
 function careEventsFor(planting: StartPlanting, plantingId: string): CareEvent[] {
-  return CARE_KINDS.map((kind) => ({
+  return CARE_EVENT_TYPES.map((type) => ({
     id: crypto.randomUUID(),
-    kind,
+    type,
     plantingId,
     varietyName: planting.variety.name,
     bedName: planting.bedName,
-    seedSaveCount: kind === "set-aside-seeds" ? planting.variety.seedSaveCount : undefined,
+    seedSaveCount: type === "set-aside-seeds" ? planting.variety.seedSaveCount : undefined,
     done: false,
   }));
 }

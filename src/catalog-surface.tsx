@@ -6,9 +6,11 @@ import {
   KITCHEN_TRADITIONS,
   categoriesIn,
   categoryFromSlug,
+  findTechnique,
   findVariety,
   kindFromSlug,
   kindsIn,
+  showsFinish,
   slugFor,
   suggestionsFor,
   varietiesOf,
@@ -16,7 +18,9 @@ import {
   type Category,
   type Fit,
   type KitchenTradition,
+  type Technique,
   type Variety,
+  type VarietyFinish,
 } from "./catalog";
 
 export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
@@ -43,6 +47,9 @@ export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
           ))}
         </ul>
       )}
+      <p>
+        <CatalogLink path="/techniques">Techniques</CatalogLink>
+      </p>
     </main>
   );
 }
@@ -121,12 +128,14 @@ export function KindPage({ catalog }: { catalog: readonly Variety[] }) {
 
 export function VarietyPage({
   catalog,
+  planted = [],
   favorites,
   onFavoritesChange,
   lists,
   onListsChange,
 }: {
   catalog: readonly Variety[];
+  planted?: readonly string[];
   favorites: Favorites;
   onFavoritesChange: () => void;
   lists: Lists;
@@ -162,9 +171,116 @@ export function VarietyPage({
         onFavoritesChange={onFavoritesChange}
       />
       <ListMembership variety={variety} lists={lists} onListsChange={onListsChange} />
-      <p>This Variety is still thin. Fit and why are here; photoreal art and full care are not.</p>
+      {showsFinish(variety, planted) && variety.finish ? (
+        <FinishedCare finish={variety.finish} />
+      ) : (
+        <p>
+          This Variety is still thin. Fit and why are here; photoreal art and full care are not.
+        </p>
+      )}
       <Suggestions catalog={catalog} variety={variety} />
     </main>
+  );
+}
+
+function FinishedCare({ finish }: { finish: VarietyFinish }) {
+  return (
+    <>
+      <figure className="photoreal">
+        <img src={finish.photoreal.src} alt={finish.photoreal.alt} />
+      </figure>
+      <section>
+        <h2>Winter fate</h2>
+        <p>{finish.winterFate}</p>
+      </section>
+      <section>
+        <h2>Difficulty</h2>
+        <p>{finish.difficulty.level}</p>
+        <p>{finish.difficulty.why}</p>
+      </section>
+      <section>
+        <h2>Harvest</h2>
+        <p>{finish.harvest.level}</p>
+        <p>{finish.harvest.why}</p>
+      </section>
+      <section>
+        <h2>When to plant</h2>
+        <p>{finish.whenToPlant}</p>
+      </section>
+      <section>
+        <h2>Time to harvest</h2>
+        <p>{finish.timeToHarvest}</p>
+      </section>
+      <section>
+        <h2>Soil</h2>
+        <p>{finish.soil}</p>
+      </section>
+      {finish.techniques.length > 0 ? (
+        <section>
+          <h2>Techniques</h2>
+          <ul className="rungs">
+            {finish.techniques.map((name) => (
+              <li key={name}>
+                <CatalogLink path={`/techniques/${slugFor(name)}`}>{name}</CatalogLink>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+export function TechniquesIndex({ techniques }: { techniques: readonly Technique[] }) {
+  return (
+    <main className="surface">
+      <TechniqueTrail />
+      <h1>Techniques</h1>
+      {techniques.length === 0 ? (
+        <p>No Techniques yet.</p>
+      ) : (
+        <ul className="rungs">
+          {techniques.map((technique) => (
+            <li key={technique.name}>
+              <CatalogLink path={`/techniques/${slugFor(technique.name)}`}>
+                {technique.name}
+              </CatalogLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}
+
+export function TechniquePage({ techniques }: { techniques: readonly Technique[] }) {
+  const params = useParams();
+  const technique = findTechnique(techniques, params.techniqueSlug ?? "");
+  if (!technique) {
+    return (
+      <main className="surface">
+        <TechniqueTrail />
+        <h1>Techniques</h1>
+        <p>That Technique is not in the Catalog.</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="surface">
+      <TechniqueTrail />
+      <h1>{technique.name}</h1>
+      <p>{technique.how}</p>
+    </main>
+  );
+}
+
+function TechniqueTrail() {
+  return (
+    <nav className="trail" aria-label="Catalog trail">
+      <CatalogLink path="/catalog">Catalog</CatalogLink>
+      <CatalogLink path="/techniques">Techniques</CatalogLink>
+    </nav>
   );
 }
 

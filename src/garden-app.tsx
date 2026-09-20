@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
-import { thinCatalog, type Variety } from "./catalog";
-import { CatalogIndex, CategoryPage, KindPage, VarietyPage } from "./catalog-surface";
+import { catalogTechniques, thinCatalog, type Technique, type Variety } from "./catalog";
+import {
+  CatalogIndex,
+  CategoryPage,
+  KindPage,
+  TechniquePage,
+  TechniquesIndex,
+  VarietyPage,
+} from "./catalog-surface";
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
 import { emptyGarden, nameBed, startPlanting, type GardenBook } from "./garden";
@@ -20,9 +27,11 @@ import { Shell } from "./shell";
 export function GardenApp({
   household,
   catalog = thinCatalog,
+  techniques = catalogTechniques,
 }: {
   household: Household;
   catalog?: readonly Variety[];
+  techniques?: readonly Technique[];
 }) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
@@ -32,6 +41,7 @@ export function GardenApp({
   const [lists] = useState(createLists);
   const [, setRevision] = useState(0);
   const [garden, setGarden] = useState<GardenBook>(emptyGarden);
+  const planted = plantedVarietyNames(garden);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +134,7 @@ export function GardenApp({
           element={
             <VarietyPage
               catalog={catalog}
+              planted={planted}
               favorites={favorites}
               onFavoritesChange={() => setRevision((n) => n + 1)}
               lists={lists}
@@ -149,7 +160,16 @@ export function GardenApp({
             />
           }
         />
+        <Route path="/techniques" element={<TechniquesIndex techniques={techniques} />} />
+        <Route
+          path="/techniques/:techniqueSlug"
+          element={<TechniquePage techniques={techniques} />}
+        />
       </Routes>
     </Shell>
   );
+}
+
+function plantedVarietyNames(garden: GardenBook): string[] {
+  return [...new Set(garden.plantings.map((planting) => planting.variety.name))];
 }

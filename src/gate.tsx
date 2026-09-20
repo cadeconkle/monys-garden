@@ -26,7 +26,9 @@ export function Gate({ growingPlace, gardenerExists, error, onOpen }: GateProps)
   return (
     <main className="gate">
       <p className="place">{growingPlace}</p>
-      <h1>Mony&apos;s Garden</h1>
+      <h1 className="hero-name">
+        Mony&apos;s <span className="hero-garden">Garden</span>
+      </h1>
       <p className="lede">
         {gardenerExists
           ? "Open as the Gardener to see the Catalog and the Garden."

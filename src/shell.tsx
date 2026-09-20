@@ -12,7 +12,7 @@ export function Shell({ growingPlace, gardener, children }: ShellProps) {
   return (
     <div className="app">
       <header className="mast">
-        <div>
+        <div className="mast-place">
           <p className="wordmark">Mony&apos;s Garden</p>
           <p className="place">{growingPlace}</p>
         </div>

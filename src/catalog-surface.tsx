@@ -164,10 +164,17 @@ export function VarietyPage({
     return <Missing rung="Variety" />;
   }
 
+  const finish = showsFinish(variety, planted) ? variety.finish : undefined;
+
   return (
-    <main className="surface">
+    <main className="surface variety-page">
       <Trail category={category} kind={kind} />
       <h1>{variety.name}</h1>
+      {finish ? (
+        <figure className="photoreal">
+          <img src={finish.photoreal.src} alt={finish.photoreal.alt} />
+        </figure>
+      ) : null}
       <FavoritesAndListsNav />
       <VarietyFacts variety={variety} sentence />
       <Heart
@@ -178,10 +185,10 @@ export function VarietyPage({
       <WhenToPlant variety={variety} planted={planted} weather={weather} />
       <ListMembership variety={variety} lists={lists} onListsChange={onListsChange} />
       {variety.buyPlace ? <BuyPlaceFacts buyPlace={variety.buyPlace} /> : null}
-      {showsFinish(variety, planted) && variety.finish ? (
-        <FinishedCare finish={variety.finish} />
+      {finish ? (
+        <FinishedCare finish={finish} />
       ) : (
-        <p>
+        <p className="thin-note">
           This Variety is still thin. Fit and why are here; photoreal art and full care are not.
         </p>
       )}
@@ -226,10 +233,7 @@ function BuyPlaceFacts({ buyPlace }: { buyPlace: BuyPlace }) {
 
 function FinishedCare({ finish }: { finish: VarietyFinish }) {
   return (
-    <>
-      <figure className="photoreal">
-        <img src={finish.photoreal.src} alt={finish.photoreal.alt} />
-      </figure>
+    <div className="finished-care">
       <section>
         <h2>Winter fate</h2>
         <p>{finish.winterFate}</p>
@@ -264,7 +268,7 @@ function FinishedCare({ finish }: { finish: VarietyFinish }) {
           </ul>
         </section>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -385,7 +389,7 @@ function Heart({
   const hearted = favorites.has(variety.name);
 
   return (
-    <div className="heart">
+    <div className={hearted ? "heart is-hearted" : "heart"}>
       {hearted ? <p>This is a Favorite.</p> : null}
       <button
         type="button"
@@ -428,13 +432,15 @@ function Suggestions({ catalog, variety }: { catalog: readonly Variety[]; variet
 function VarietyFacts({ variety, sentence }: { variety: Variety; sentence?: boolean }) {
   const kitchen = kitchenUseLine(variety);
   return (
-    <>
+    <div className="variety-facts">
       <p>{variety.category}</p>
       <p>{variety.kind}</p>
-      <p className="fit">{sentence ? `This is a ${variety.fit} Fit.` : `${variety.fit} Fit`}</p>
-      <p>{variety.why}</p>
+      <p className={`fit fit-${variety.fit}`}>
+        {sentence ? `This is a ${variety.fit} Fit.` : `${variety.fit} Fit`}
+      </p>
+      <p className="variety-why">{variety.why}</p>
       {kitchen ? <p>{kitchen}</p> : null}
-    </>
+    </div>
   );
 }
 
@@ -476,11 +482,11 @@ function CatalogLink({ path, children }: { path: string; children: string }) {
 
 function CatalogFilters() {
   return (
-    <>
+    <div className="filters">
       <FitFilter />
       <KitchenFilter />
       <OrnamentalFilter />
-    </>
+    </div>
   );
 }
 

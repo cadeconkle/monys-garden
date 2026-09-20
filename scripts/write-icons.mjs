@@ -33,7 +33,7 @@ function png(size) {
   for (let y = 0; y < size; y += 1) {
     pixels[y * (size * 3 + 1)] = 0;
     for (let x = 0; x < size; x += 1) {
-      set(x, y, 27, 77, 54);
+      set(x, y, y > size * 0.78 ? 142 : 212, y > size * 0.78 ? 52 : 183, y > size * 0.78 ? 36 : 138);
     }
   }
 
@@ -46,10 +46,8 @@ function png(size) {
     }
   };
 
-  paint(size * 0.5, size * 0.46, size * 0.18, 198, 75, 122);
-  paint(size * 0.32, size * 0.52, size * 0.13, 217, 122, 156);
-  paint(size * 0.68, size * 0.52, size * 0.13, 217, 122, 156);
-  paint(size * 0.5, size * 0.47, size * 0.055, 244, 231, 176);
+  paint(size * 0.5, size * 0.42, size * 0.2, 214, 61, 122);
+  paint(size * 0.5, size * 0.42, size * 0.06, 28, 38, 22);
 
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);

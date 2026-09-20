@@ -49,12 +49,12 @@ export function GardenSurface({
       <ForecastGlance weather={weather} />
       <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
       {plantings.length === 0 ? (
-        <>
+        <div className="empty-garden">
           <p>Nothing is in the ground yet.</p>
           <p>
             <Link to="/catalog">Open the Catalog</Link>
           </p>
-        </>
+        </div>
       ) : (
         <PlantingList
           garden={garden}
@@ -63,8 +63,10 @@ export function GardenSurface({
           onEndPlantingAsFailed={onEndPlantingAsFailed}
         />
       )}
-      <NameBedForm onNameBed={onNameBed} />
-      <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
+      <div className="garden-work">
+        <NameBedForm onNameBed={onNameBed} />
+        <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
+      </div>
     </main>
   );
 }
@@ -84,8 +86,8 @@ function ForecastGlance({ weather }: { weather?: GrowingPlaceForecast }) {
           <li key={day.date}>{glanceLine(null, day)}</li>
         ))}
       </ul>
-      {enoughRain(weather) ? <p>Enough rain to dismiss water.</p> : null}
-      {frostNight(weather) ? <p>Frost is coming.</p> : null}
+      {enoughRain(weather) ? <p className="weather-note">Enough rain to dismiss water.</p> : null}
+      {frostNight(weather) ? <p className="weather-note frost">Frost is coming.</p> : null}
     </section>
   );
 }
@@ -139,14 +141,14 @@ function PlantingList({
   return (
     <div className="areas">
       {currentPlantingsByArea(garden).map(({ area, beds }) => (
-        <section key={area}>
+        <section className="area-band" key={area}>
           <h2>{area}</h2>
           {beds.map((bed) => {
             const soil = soilFor(bed, bed.plantings);
             const fertilizer = fertilizerAdviceFor(bed, bed.plantings);
 
             return (
-              <article key={bed.name}>
+              <article className="bed" key={bed.name}>
                 <h3>{bed.name}</h3>
                 {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
                 {soil ? <p>Soil: {soil}</p> : null}
@@ -168,7 +170,11 @@ function PlantingList({
                       {planting.end === "failed" ? (
                         <p>This Planting failed.</p>
                       ) : (
-                        <button type="button" onClick={() => onEndPlantingAsFailed(planting.id)}>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => onEndPlantingAsFailed(planting.id)}
+                        >
                           End this Planting as failed
                         </button>
                       )}

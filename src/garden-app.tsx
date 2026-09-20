@@ -176,7 +176,9 @@ export function GardenApp({
     return (
       <main className="gate">
         <p className="place">{household.growingPlace.name}</p>
-        <h1>Mony&apos;s Garden</h1>
+        <h1 className="hero-name">
+          Mony&apos;s <span className="hero-garden">Garden</span>
+        </h1>
       </main>
     );
   }

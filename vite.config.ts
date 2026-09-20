@@ -16,8 +16,8 @@ export default defineConfig({
         name: "Mony's Garden",
         short_name: "Garden",
         description: "The household garden in Fuquay-Varina, North Carolina",
-        theme_color: "#1B4D36",
-        background_color: "#EAF1EC",
+        theme_color: "#1F6A3C",
+        background_color: "#C5D6A4",
         display: "standalone",
         start_url: "/",
         icons: [

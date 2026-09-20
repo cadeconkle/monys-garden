@@ -23,15 +23,19 @@ import {
 import { createLists } from "./lists";
 import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
+import { curatedShops, type Shop } from "./shops";
+import { ShopsSurface } from "./shops-surface";
 
 export function GardenApp({
   household,
   catalog = thinCatalog,
   techniques = catalogTechniques,
+  shops = curatedShops,
 }: {
   household: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
+  shops?: readonly Shop[];
 }) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
@@ -165,6 +169,7 @@ export function GardenApp({
           path="/techniques/:techniqueSlug"
           element={<TechniquePage techniques={techniques} />}
         />
+        <Route path="/shops" element={<ShopsSurface shops={shops} />} />
       </Routes>
     </Shell>
   );

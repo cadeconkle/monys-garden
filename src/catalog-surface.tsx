@@ -22,6 +22,7 @@ import {
   type Variety,
   type VarietyFinish,
 } from "./catalog";
+import type { BuyPlace } from "./shops";
 
 export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
   const [search] = useSearchParams();
@@ -171,6 +172,7 @@ export function VarietyPage({
         onFavoritesChange={onFavoritesChange}
       />
       <ListMembership variety={variety} lists={lists} onListsChange={onListsChange} />
+      {variety.buyPlace ? <BuyPlaceFacts buyPlace={variety.buyPlace} /> : null}
       {showsFinish(variety, planted) && variety.finish ? (
         <FinishedCare finish={variety.finish} />
       ) : (
@@ -180,6 +182,16 @@ export function VarietyPage({
       )}
       <Suggestions catalog={catalog} variety={variety} />
     </main>
+  );
+}
+
+function BuyPlaceFacts({ buyPlace }: { buyPlace: BuyPlace }) {
+  const line = [buyPlace.channel, buyPlace.shop].filter(Boolean).join(" at ");
+  return (
+    <section className="buy-place">
+      <h2>Buy place</h2>
+      <p>{buyPlace.shop ? <Link to="/shops">{line}</Link> : line}</p>
+    </section>
   );
 }
 

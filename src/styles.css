@@ -281,6 +281,21 @@ button:disabled {
   letter-spacing: -0.02em;
 }
 
+.buy-place {
+  margin: 1.2rem 0;
+}
+
+.shop-kind {
+  margin: 0.3rem 0 0;
+  color: var(--quiet);
+}
+
+.shop-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.2rem;
+}
+
 .fit-filter {
   margin: 0 0 1.2rem;
   border: 0;

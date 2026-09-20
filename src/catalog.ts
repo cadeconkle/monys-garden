@@ -1,3 +1,5 @@
+import type { BuyPlace } from "./shops";
+
 export const CATEGORIES = [
   "fruit trees",
   "herbs",
@@ -64,6 +66,7 @@ export type Variety = {
   fit: Fit;
   why: string;
   kitchenTradition?: KitchenTradition | "none";
+  buyPlace?: BuyPlace;
   finish?: VarietyFinish;
 };
 
@@ -181,6 +184,7 @@ export const thinCatalog: Variety[] = [
     fit: "strong",
     why: "Sets fruit after our late frost.",
     kitchenTradition: "American",
+    buyPlace: { shop: "Logan's Garden Hut", channel: "nursery" },
     finish: {
       photoreal: photorealOf("Contender peach"),
       winterFate: "leave out",
@@ -245,6 +249,7 @@ export const thinCatalog: Variety[] = [
     fit: "strong",
     why: "Thrives in humid heat.",
     kitchenTradition: "Asian",
+    buyPlace: { shop: "H Mart", channel: "grocery" },
   },
   {
     name: "Santo cilantro",
@@ -301,6 +306,7 @@ export const thinCatalog: Variety[] = [
     fit: "strong",
     why: "A common Fuquay-Varina front yard shrub.",
     kitchenTradition: "none",
+    buyPlace: { shop: "Logan's Garden Hut", channel: "nursery" },
   },
   {
     name: "Yuletide camellia",

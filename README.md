@@ -1,6 +1,6 @@
 # Mony's Garden
 
-A private book for the household Garden in Fuquay-Varina, North Carolina. One Gardener. Two surfaces: Catalog and Garden.
+A private book for the household Garden in Fuquay-Varina, North Carolina. One Gardener. Catalog, Garden, and a short curated Shop list.
 
 Domain language lives in `CONTEXT.md`. Decisions live in `docs/adr/`.
 

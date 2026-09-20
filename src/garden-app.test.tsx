@@ -1087,6 +1087,96 @@ test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created
   expect(within(area).queryByRole("option", { name: /indoors/i })).toBeNull();
 });
 
+test("the Shop list is a short curated set with website and Maps links that leave the app", async () => {
+  const garden = openGarden({
+    shops: [
+      {
+        name: "H Mart",
+        kind: "Asian grocery",
+        why: "Asian greens, Thai basil, and bitter melon.",
+        website: "https://www.hmart.com/store/cary-nc-27519",
+        maps: "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+      },
+      {
+        name: "Harris Teeter",
+        kind: "American grocery",
+        why: "Everyday produce and common pot herbs.",
+        website: "https://www.harristeeter.com/stores/grocery/nc/fuquay-varina/fuquay-crossing/097/00498",
+        maps: "https://www.google.com/maps/search/?api=1&query=Harris+Teeter+Fuquay-Varina+NC",
+      },
+      {
+        name: "Logan's Garden Hut",
+        kind: "plant shop",
+        why: "Starts, shrubs, and trees for this Garden.",
+        website: "https://www.logansgardenhut.com/",
+        maps: "https://www.google.com/maps/search/?api=1&query=Logan%27s+Garden+Hut+Fuquay-Varina+NC",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Shops" }));
+
+  expect(await garden.findByRole("heading", { name: "Shops" })).toBeVisible();
+  expect(garden.getByText("A short list of Shops for this Garden.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
+  expect(garden.getByText("Asian grocery")).toBeVisible();
+  expect(garden.getByText("Asian greens, Thai basil, and bitter melon.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Harris Teeter" })).toBeVisible();
+  expect(garden.getByText("American grocery")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Logan's Garden Hut" })).toBeVisible();
+  expect(garden.getByText("plant shop")).toBeVisible();
+  expect(garden.queryByText(/directory/i)).toBeNull();
+
+  const website = garden.getByRole("link", { name: "H Mart website" });
+  const maps = garden.getByRole("link", { name: "H Mart Google Maps" });
+  expect(website).toHaveAttribute("href", "https://www.hmart.com/store/cary-nc-27519");
+  expect(website).toHaveAttribute("target", "_blank");
+  expect(website).toHaveAttribute("rel", "noreferrer");
+  expect(maps).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+  );
+  expect(maps).toHaveAttribute("target", "_blank");
+  expect(maps).toHaveAttribute("rel", "noreferrer");
+});
+
+test("a Variety can show a Buy place", async () => {
+  const garden = openGarden({
+    shops: [
+      {
+        name: "H Mart",
+        kind: "Asian grocery",
+        why: "Asian greens, Thai basil, and bitter melon.",
+        website: "https://www.hmart.com/store/cary-nc-27519",
+        maps: "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+      },
+    ],
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+        buyPlace: { shop: "H Mart", channel: "grocery" },
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+
+  expect(await garden.findByRole("heading", { name: "Queenette Thai basil" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Buy place" })).toBeVisible();
+  await userEvent.click(garden.getByRole("link", { name: "grocery at H Mart" }));
+  expect(await garden.findByRole("heading", { name: "Shops" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
+});
+
 async function nameTheBed(garden: RenderResult, area: string, name: string) {
   await userEvent.selectOptions(garden.getByLabelText("Area"), area);
   const bedName = garden.getByLabelText("Bed name");

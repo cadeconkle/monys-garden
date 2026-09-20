@@ -263,6 +263,39 @@ button:disabled {
   letter-spacing: -0.02em;
 }
 
+.photoreal {
+  margin: 1.2rem 0 1.4rem;
+}
+
+.photoreal img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.surface h2 {
+  margin: 1.2rem 0 0.35rem;
+  font-family: "Bricolage Grotesque", "Avenir Next", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.buy-place {
+  margin: 1.2rem 0;
+}
+
+.shop-kind {
+  margin: 0.3rem 0 0;
+  color: var(--quiet);
+}
+
+.shop-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.2rem;
+}
+
 .fit-filter {
   margin: 0 0 1.2rem;
   border: 0;
@@ -297,18 +330,19 @@ button:disabled {
   font-size: 1.15rem;
 }
 
-.plantings {
+.plantings,
+.care ul {
   list-style: none;
   margin: 0.35rem 0 0;
   padding: 0;
 }
 
 .plantings li {
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
 }
 
 .plantings p {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.35rem;
 }
 
 .plantings button {
@@ -317,6 +351,27 @@ button:disabled {
 
 .areas .garden-form {
   margin-top: 0.8rem;
+}
+
+.care {
+  margin: 0 0 1.6rem;
+}
+
+.care h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.35rem;
+}
+
+.care li {
+  margin: 0 0 0.7rem;
+}
+
+.care p {
+  margin: 0 0 0.35rem;
+}
+
+.care button {
+  margin-top: 0;
 }
 
 .garden-form {

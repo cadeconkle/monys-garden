@@ -1,7 +1,32 @@
 import { fireEvent, within, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { VarietyFinish } from "./catalog";
 import { createHousehold } from "./household";
 import { openAsGardener, openGarden } from "./open-garden";
+
+async function goToCatalog(garden: RenderResult) {
+  await userEvent.click(garden.getAllByRole("link", { name: "Catalog" })[0]);
+}
+
+const meyerFinish: VarietyFinish = {
+  photoreal: {
+    src: "/varieties/improved-meyer-lemon.jpg",
+    alt: "Photoreal render of Improved Meyer lemon",
+  },
+  winterFate: "bring in",
+  difficulty: {
+    level: "fussy",
+    why: "November frost will take it if it stays on the Patio.",
+  },
+  harvest: {
+    level: "light",
+    why: "Indoor winters cut the fruit it can hold.",
+  },
+  whenToPlant: "Move the pot out after the April 4 frost window.",
+  timeToHarvest: "Fruit in winter if it flowers under glass.",
+  soil: "Acidic, fast-draining soil in a pot and a citrus feed in summer, then almost none indoors.",
+  techniques: ["overwinter indoors"],
+};
 
 test("the app is written only for Fuquay-Varina", () => {
   const garden = openGarden();
@@ -555,6 +580,351 @@ test("Catalog categories include vines and keep bushes inside shrubs", async () 
   expect(garden.queryByRole("link", { name: "bushes" })).toBeNull();
 });
 
+test("a strong-Fit Variety can show photoreal art and full care", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Contender peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "strong",
+        why: "Sets fruit after our late frost.",
+        finish: {
+          photoreal: {
+            src: "/varieties/contender-peach.jpg",
+            alt: "Photoreal render of Contender peach",
+          },
+          winterFate: "leave out",
+          difficulty: {
+            level: "easy",
+            why: "Late bloom misses our April frost.",
+          },
+          harvest: {
+            level: "solid",
+            why: "A pie-worth of fruit in a piedmont summer.",
+          },
+          whenToPlant: "Set a bare-root tree in February, before bud swell.",
+          timeToHarvest: "Fruit in June to July; a young tree needs three summers.",
+          soil: "Well-drained, slightly acidic loam. A light spring feed after fruit set — not a dump of nitrogen.",
+          techniques: ["watering"],
+        },
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Contender peach" }));
+
+  expect(await garden.findByRole("heading", { name: "Contender peach" })).toBeVisible();
+  expect(
+    garden.getByRole("img", { name: "Photoreal render of Contender peach" }),
+  ).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Winter fate" })).toBeVisible();
+  expect(garden.getByText("leave out")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Difficulty" })).toBeVisible();
+  expect(garden.getByText("easy")).toBeVisible();
+  expect(garden.getByText("Late bloom misses our April frost.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Harvest" })).toBeVisible();
+  expect(garden.getByText("solid")).toBeVisible();
+  expect(garden.getByText("A pie-worth of fruit in a piedmont summer.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "When to plant" })).toBeVisible();
+  expect(garden.getByText("Set a bare-root tree in February, before bud swell.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Time to harvest" })).toBeVisible();
+  expect(
+    garden.getByText("Fruit in June to July; a young tree needs three summers."),
+  ).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Soil" })).toBeVisible();
+  expect(
+    garden.getByText(
+      "Well-drained, slightly acidic loam. A light spring feed after fruit set — not a dump of nitrogen.",
+    ),
+  ).toBeVisible();
+  expect(garden.queryByText(/still thin/)).toBeNull();
+});
+
+test("a Variety she plants gets a finished page even if Fit is weak", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+        finish: meyerFinish,
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Lemon pot");
+  await startThePlanting(garden, {
+    variety: "Improved Meyer lemon",
+    bed: "Patio · Lemon pot",
+    plantedOn: "2026-04-12",
+    start: "tree",
+  });
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "lemon" }));
+  await userEvent.click(garden.getByRole("link", { name: "Improved Meyer lemon" }));
+
+  expect(await garden.findByRole("heading", { name: "Improved Meyer lemon" })).toBeVisible();
+  expect(
+    garden.getByRole("img", { name: "Photoreal render of Improved Meyer lemon" }),
+  ).toBeVisible();
+  expect(garden.getByText("bring in")).toBeVisible();
+  expect(garden.getByText("fussy")).toBeVisible();
+  expect(garden.getByText("light")).toBeVisible();
+  expect(garden.queryByText(/still thin/)).toBeNull();
+});
+
+test("a thin Variety stays thin even when she plants it or finish waits on a weak Fit", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Elberta peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "weak",
+        why: "Blooms too early for an April frost here.",
+      },
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+        finish: meyerFinish,
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Front", "Peach tree");
+  await startThePlanting(garden, {
+    variety: "Elberta peach",
+    bed: "Front · Peach tree",
+    plantedOn: "2026-02-10",
+    start: "tree",
+  });
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Elberta peach" }));
+
+  expect(await garden.findByRole("heading", { name: "Elberta peach" })).toBeVisible();
+  expect(garden.getByText(/still thin/)).toBeVisible();
+  expect(garden.queryByRole("img")).toBeNull();
+  expect(garden.queryByRole("heading", { name: "Winter fate" })).toBeNull();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "lemon" }));
+  await userEvent.click(garden.getByRole("link", { name: "Improved Meyer lemon" }));
+
+  expect(await garden.findByRole("heading", { name: "Improved Meyer lemon" })).toBeVisible();
+  expect(garden.getByText(/still thin/)).toBeVisible();
+  expect(garden.queryByRole("img")).toBeNull();
+  expect(garden.queryByRole("heading", { name: "Winter fate" })).toBeNull();
+});
+
+test("Winter fate, Difficulty, and Harvest use the Growing-place words", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Contender peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "strong",
+        why: "Sets fruit after our late frost.",
+        finish: {
+          photoreal: {
+            src: "/varieties/contender-peach.jpg",
+            alt: "Photoreal render of Contender peach",
+          },
+          winterFate: "leave out",
+          difficulty: { level: "easy", why: "Late bloom misses our April frost." },
+          harvest: { level: "solid", why: "A pie-worth of fruit in a piedmont summer." },
+          whenToPlant: "February bare-root.",
+          timeToHarvest: "June to July.",
+          soil: "Well-drained acidic loam.",
+          techniques: [],
+        },
+      },
+      {
+        name: "Celeste fig",
+        category: "fruit trees",
+        kind: "fig",
+        fit: "strong",
+        why: "Likes our long, hot summers.",
+        finish: {
+          photoreal: {
+            src: "/varieties/celeste-fig.jpg",
+            alt: "Photoreal render of Celeste fig",
+          },
+          winterFate: "protect in place",
+          difficulty: { level: "moderate", why: "Young wood wants a wrap on frost nights." },
+          harvest: { level: "heavy", why: "Two flushes if August stays hot." },
+          whenToPlant: "After the April 4 frost window.",
+          timeToHarvest: "July into August.",
+          soil: "Rich, well-drained soil and a spring compost, not a late nitrogen push.",
+          techniques: ["frost cloth"],
+        },
+      },
+      {
+        name: "Clemson Spineless okra",
+        category: "vegetables",
+        kind: "okra",
+        fit: "strong",
+        why: "Built for nights that stay over 86°F.",
+        finish: {
+          photoreal: {
+            src: "/varieties/clemson-spineless-okra.jpg",
+            alt: "Photoreal render of Clemson Spineless okra",
+          },
+          winterFate: "dies — replant",
+          difficulty: { level: "easy", why: "It asks for heat and little else." },
+          harvest: { level: "heavy", why: "Pods keep coming until November frost." },
+          whenToPlant: "Late April once the soil is warm.",
+          timeToHarvest: "About fifty-five days from seed.",
+          soil: "Ordinary garden soil; go light on nitrogen or you get leaves, not pods.",
+          techniques: ["watering"],
+        },
+      },
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "strong",
+        why: "Worth the indoor winter for a few fruit.",
+        finish: meyerFinish,
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Contender peach" }));
+  expect(garden.getByText("leave out")).toBeVisible();
+  expect(garden.getByText("easy")).toBeVisible();
+  expect(garden.getByText("solid")).toBeVisible();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "fig" }));
+  await userEvent.click(garden.getByRole("link", { name: "Celeste fig" }));
+  expect(garden.getByText("protect in place")).toBeVisible();
+  expect(garden.getByText("moderate")).toBeVisible();
+  expect(garden.getByText("heavy")).toBeVisible();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
+  await userEvent.click(garden.getByRole("link", { name: "okra" }));
+  await userEvent.click(garden.getByRole("link", { name: "Clemson Spineless okra" }));
+  expect(garden.getByText("dies — replant")).toBeVisible();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "lemon" }));
+  await userEvent.click(garden.getByRole("link", { name: "Improved Meyer lemon" }));
+  expect(garden.getByText("bring in")).toBeVisible();
+  expect(garden.getByText("fussy")).toBeVisible();
+  expect(garden.getByText("light")).toBeVisible();
+});
+
+test("the Gardener can open a Technique from a Variety and from its own section", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celeste fig",
+        category: "fruit trees",
+        kind: "fig",
+        fit: "strong",
+        why: "Likes our long, hot summers.",
+        finish: {
+          photoreal: {
+            src: "/varieties/celeste-fig.jpg",
+            alt: "Photoreal render of Celeste fig",
+          },
+          winterFate: "protect in place",
+          difficulty: { level: "moderate", why: "Young wood wants a wrap on frost nights." },
+          harvest: { level: "heavy", why: "Two flushes if August stays hot." },
+          whenToPlant: "After the April 4 frost window.",
+          timeToHarvest: "July into August.",
+          soil: "Rich, well-drained soil and a spring compost, not a late nitrogen push.",
+          techniques: ["frost cloth"],
+        },
+      },
+    ],
+    techniques: [
+      {
+        name: "frost cloth",
+        how: "Drape cloth to the ground before a November frost night, then take it off in the morning.",
+      },
+      {
+        name: "watering",
+        how: "Soak the Bed in the morning; a new Planting drinks more than an established shrub.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "Techniques" }));
+  expect(await garden.findByRole("heading", { name: "Techniques" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "frost cloth" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "watering" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "frost cloth" }));
+  expect(await garden.findByRole("heading", { name: "frost cloth" })).toBeVisible();
+  expect(
+    garden.getByText(
+      "Drape cloth to the ground before a November frost night, then take it off in the morning.",
+    ),
+  ).toBeVisible();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "fig" }));
+  await userEvent.click(garden.getByRole("link", { name: "Celeste fig" }));
+  await userEvent.click(garden.getByRole("link", { name: "frost cloth" }));
+  expect(await garden.findByRole("heading", { name: "frost cloth" })).toBeVisible();
+});
+
+test("the shipped Catalog finishes a strong-Fit Variety and leaves a thin one thin", async () => {
+  const garden = openGarden();
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Contender peach" }));
+
+  expect(await garden.findByRole("heading", { name: "Contender peach" })).toBeVisible();
+  expect(
+    garden.getByRole("img", { name: "Photoreal render of Contender peach" }),
+  ).toBeVisible();
+  expect(garden.getByText("leave out")).toBeVisible();
+  expect(garden.queryByText(/still thin/)).toBeNull();
+
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+
+  expect(await garden.findByRole("heading", { name: "Queenette Thai basil" })).toBeVisible();
+  expect(garden.getByText(/still thin/)).toBeVisible();
+  expect(garden.queryByRole("img")).toBeNull();
+});
+
 test("the Gardener can name a Bed and start a Planting", async () => {
   const garden = openGarden({
     catalog: [
@@ -703,6 +1073,137 @@ test("a later season in the same Bed is a new Planting; the old Planting is unch
   expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
 });
 
+test("a Planting produces water, harvest, replant, and set aside seeds Care events", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByRole("heading", { name: "Care" })).toBeVisible();
+  expect(garden.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
+});
+
+test("the Gardener can mark a Care event done and it leaves the due list", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  const water = garden.getByText("Water Celebrity tomato in Tomato row").closest("li");
+  expect(water).not.toBeNull();
+  await userEvent.click(within(water!).getByRole("button", { name: "Mark done" }));
+
+  expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
+});
+
+test("set aside seeds uses the Variety's seed-save count, not a made-up number", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+        seedSaveCount: 47,
+      },
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+        seedSaveCount: 12,
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Set aside 47 seeds of Celebrity tomato")).toBeVisible();
+  expect(garden.queryByText("Set aside 12 seeds of Celebrity tomato")).toBeNull();
+  expect(garden.queryByText("Set aside seeds of Celebrity tomato")).toBeNull();
+});
+
+test("ending a Planting early as failed stops further water Care events", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Basil pot");
+  await startThePlanting(garden, {
+    variety: "Queenette Thai basil",
+    bed: "Patio · Basil pot",
+    plantedOn: "2026-05-02",
+    start: "seed",
+  });
+
+  expect(garden.getByText("Water Queenette Thai basil in Basil pot")).toBeVisible();
+
+  const planting = garden.getByText("Queenette Thai basil · seed · 2026-05-02").closest("li");
+  expect(planting).not.toBeNull();
+  await userEvent.click(
+    within(planting!).getByRole("button", { name: "End this Planting as failed" }),
+  );
+
+  expect(garden.queryByText("Water Queenette Thai basil in Basil pot")).toBeNull();
+  expect(garden.getByText("Harvest Queenette Thai basil in Basil pot")).toBeVisible();
+});
+
 test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created as an Area", async () => {
   const garden = openGarden();
 
@@ -715,6 +1216,96 @@ test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created
   expect(within(area).getByRole("option", { name: "Patio" })).toBeVisible();
   expect(within(area).queryByRole("option", { name: /kitchen/i })).toBeNull();
   expect(within(area).queryByRole("option", { name: /indoors/i })).toBeNull();
+});
+
+test("the Shop list is a short curated set with website and Maps links that leave the app", async () => {
+  const garden = openGarden({
+    shops: [
+      {
+        name: "H Mart",
+        kind: "Asian grocery",
+        why: "Asian greens, Thai basil, and bitter melon.",
+        website: "https://www.hmart.com/store/cary-nc-27519",
+        maps: "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+      },
+      {
+        name: "Harris Teeter",
+        kind: "American grocery",
+        why: "Everyday produce and common pot herbs.",
+        website: "https://www.harristeeter.com/stores/grocery/nc/fuquay-varina/fuquay-crossing/097/00498",
+        maps: "https://www.google.com/maps/search/?api=1&query=Harris+Teeter+Fuquay-Varina+NC",
+      },
+      {
+        name: "Logan's Garden Hut",
+        kind: "plant shop",
+        why: "Starts, shrubs, and trees for this Garden.",
+        website: "https://www.logansgardenhut.com/",
+        maps: "https://www.google.com/maps/search/?api=1&query=Logan%27s+Garden+Hut+Fuquay-Varina+NC",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Shops" }));
+
+  expect(await garden.findByRole("heading", { name: "Shops" })).toBeVisible();
+  expect(garden.getByText("A short list of Shops for this Garden.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
+  expect(garden.getByText("Asian grocery")).toBeVisible();
+  expect(garden.getByText("Asian greens, Thai basil, and bitter melon.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Harris Teeter" })).toBeVisible();
+  expect(garden.getByText("American grocery")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Logan's Garden Hut" })).toBeVisible();
+  expect(garden.getByText("plant shop")).toBeVisible();
+  expect(garden.queryByText(/directory/i)).toBeNull();
+
+  const website = garden.getByRole("link", { name: "H Mart website" });
+  const maps = garden.getByRole("link", { name: "H Mart Google Maps" });
+  expect(website).toHaveAttribute("href", "https://www.hmart.com/store/cary-nc-27519");
+  expect(website).toHaveAttribute("target", "_blank");
+  expect(website).toHaveAttribute("rel", "noreferrer");
+  expect(maps).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+  );
+  expect(maps).toHaveAttribute("target", "_blank");
+  expect(maps).toHaveAttribute("rel", "noreferrer");
+});
+
+test("a Variety can show a Buy place", async () => {
+  const garden = openGarden({
+    shops: [
+      {
+        name: "H Mart",
+        kind: "Asian grocery",
+        why: "Asian greens, Thai basil, and bitter melon.",
+        website: "https://www.hmart.com/store/cary-nc-27519",
+        maps: "https://www.google.com/maps/search/?api=1&query=H+Mart+Cary+NC",
+      },
+    ],
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+        buyPlace: { shop: "H Mart", channel: "grocery" },
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+
+  expect(await garden.findByRole("heading", { name: "Queenette Thai basil" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Buy place" })).toBeVisible();
+  await userEvent.click(garden.getByRole("link", { name: "grocery at H Mart" }));
+  expect(await garden.findByRole("heading", { name: "Shops" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
 });
 
 test("setting Stay to indoors does not change Area, and the Gardener can bring the Planting back to its Bed", async () => {
@@ -806,6 +1397,9 @@ test("a Bed can override Soil; the Variety default remains when there is no over
   expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
   expect(garden.queryByText(/fertilizer is due/i)).toBeNull();
   expect(garden.queryByRole("button", { name: /fertilizer/i })).toBeNull();
+  expect(
+    within(garden.getByRole("list", { name: "Care events" })).queryByText(/fertilizer/i),
+  ).toBeNull();
 
   await userEvent.type(garden.getByLabelText("Soil override for Lemon pot"), "amended clay");
   await userEvent.click(garden.getByRole("button", { name: "Override Soil for Lemon pot" }));

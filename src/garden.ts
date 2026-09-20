@@ -9,6 +9,12 @@ export type Start = (typeof STARTS)[number];
 export const STAYS = ["in-bed", "indoors"] as const;
 export type Stay = (typeof STAYS)[number];
 
+export const PLANTING_ENDS = ["open", "harvested", "winter-kill", "failed"] as const;
+export type PlantingEnd = (typeof PLANTING_ENDS)[number];
+
+export const CARE_EVENT_TYPES = ["water", "harvest", "replant", "set-aside-seeds"] as const;
+export type CareEventType = (typeof CARE_EVENT_TYPES)[number];
+
 export type Bed = {
   area: Area;
   name: string;
@@ -24,15 +30,27 @@ export type Planting = {
   plantedOn: string;
   start: Start;
   stay: Stay;
+  end: PlantingEnd;
+};
+
+export type CareEvent = {
+  id: string;
+  type: CareEventType;
+  plantingId: string;
+  varietyName: string;
+  bedName: string;
+  seedSaveCount?: number;
+  done: boolean;
 };
 
 export type GardenBook = {
   beds: Bed[];
   plantings: Planting[];
+  careEvents: CareEvent[];
 };
 
 export function emptyGarden(): GardenBook {
-  return { beds: [], plantings: [] };
+  return { beds: [], plantings: [], careEvents: [] };
 }
 
 export function nameBed(garden: GardenBook, area: Area, name: string): GardenBook {
@@ -83,6 +101,8 @@ export function startPlanting(garden: GardenBook, planting: StartPlanting): Star
     };
   }
 
+  const plantingId = crypto.randomUUID();
+
   return {
     garden: {
       beds: garden.beds.map((item) =>
@@ -91,15 +111,17 @@ export function startPlanting(garden: GardenBook, planting: StartPlanting): Star
       plantings: [
         ...garden.plantings,
         {
-          id: crypto.randomUUID(),
+          id: plantingId,
           area: planting.area,
           bedName: planting.bedName,
           variety: planting.variety,
           plantedOn: planting.plantedOn,
           start: planting.start,
           stay: "in-bed",
+          end: "open",
         },
       ],
+      careEvents: [...garden.careEvents, ...careEventsFor(planting, plantingId)],
     },
     error: null,
   };
@@ -137,7 +159,8 @@ export function soilFor(
   bed: { soil: string | null; plan: Variety | null },
   plantings: Planting[],
 ): string | null {
-  return bed.soil ?? bed.plan?.soil ?? plantings[0]?.variety.soil ?? null;
+  const variety = bed.plan ?? plantings[0]?.variety;
+  return bed.soil ?? varietySoil(variety) ?? null;
 }
 
 export function fertilizerAdviceFor(
@@ -145,6 +168,68 @@ export function fertilizerAdviceFor(
   plantings: Planting[],
 ): string | null {
   return bed.plan?.fertilizer ?? plantings[0]?.variety.fertilizer ?? null;
+}
+
+function varietySoil(variety: Variety | undefined): string | undefined {
+  return variety?.soil ?? variety?.finish?.soil;
+}
+
+export function endPlantingAsFailed(garden: GardenBook, plantingId: string): GardenBook {
+  return {
+    ...garden,
+    plantings: garden.plantings.map((planting) =>
+      planting.id === plantingId ? { ...planting, end: "failed" } : planting,
+    ),
+  };
+}
+
+export function markCareEventDone(garden: GardenBook, careEventId: string): GardenBook {
+  return {
+    ...garden,
+    careEvents: garden.careEvents.map((event) =>
+      event.id === careEventId ? { ...event, done: true } : event,
+    ),
+  };
+}
+
+export function dueCareEvents(garden: GardenBook): CareEvent[] {
+  const failedIds = new Set(
+    garden.plantings.filter((planting) => planting.end === "failed").map((planting) => planting.id),
+  );
+
+  return garden.careEvents.filter((event) => {
+    if (event.done) {
+      return false;
+    }
+    if (event.type === "water" && failedIds.has(event.plantingId)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function careEventLabel(event: CareEvent): string {
+  if (event.type === "set-aside-seeds") {
+    if (event.seedSaveCount != null) {
+      return `Set aside ${event.seedSaveCount} seeds of ${event.varietyName}`;
+    }
+    return `Set aside seeds of ${event.varietyName}`;
+  }
+
+  const verb = event.type === "water" ? "Water" : event.type === "harvest" ? "Harvest" : "Replant";
+  return `${verb} ${event.varietyName} in ${event.bedName}`;
+}
+
+function careEventsFor(planting: StartPlanting, plantingId: string): CareEvent[] {
+  return CARE_EVENT_TYPES.map((type) => ({
+    id: crypto.randomUUID(),
+    type,
+    plantingId,
+    varietyName: planting.variety.name,
+    bedName: planting.bedName,
+    seedSaveCount: type === "set-aside-seeds" ? planting.variety.seedSaveCount : undefined,
+    done: false,
+  }));
 }
 
 export function currentPlantings(garden: GardenBook): Planting[] {

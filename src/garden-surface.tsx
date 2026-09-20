@@ -4,8 +4,10 @@ import type { Variety } from "./catalog";
 import {
   AREAS,
   STARTS,
+  careEventLabel,
   currentPlantings,
   currentPlantingsByArea,
+  dueCareEvents,
   fertilizerAdviceFor,
   soilFor,
   type Area,
@@ -22,6 +24,8 @@ type GardenSurfaceProps = {
   onStartPlanting: (planting: StartPlanting) => string | null;
   onSetStay: (plantingId: string, stay: Stay) => void;
   onOverrideSoil: (area: Area, bedName: string, soil: string) => void;
+  onMarkCareEventDone: (careEventId: string) => void;
+  onEndPlantingAsFailed: (plantingId: string) => void;
 };
 
 export function GardenSurface({
@@ -31,6 +35,8 @@ export function GardenSurface({
   onStartPlanting,
   onSetStay,
   onOverrideSoil,
+  onMarkCareEventDone,
+  onEndPlantingAsFailed,
 }: GardenSurfaceProps) {
   const plantings = currentPlantings(garden);
 
@@ -45,7 +51,15 @@ export function GardenSurface({
           </p>
         </>
       ) : (
-        <PlantingList garden={garden} onSetStay={onSetStay} onOverrideSoil={onOverrideSoil} />
+        <>
+          <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
+          <PlantingList
+            garden={garden}
+            onSetStay={onSetStay}
+            onOverrideSoil={onOverrideSoil}
+            onEndPlantingAsFailed={onEndPlantingAsFailed}
+          />
+        </>
       )}
       <NameBedForm onNameBed={onNameBed} />
       <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
@@ -53,14 +67,45 @@ export function GardenSurface({
   );
 }
 
+function CareList({
+  garden,
+  onMarkCareEventDone,
+}: {
+  garden: GardenBook;
+  onMarkCareEventDone: (careEventId: string) => void;
+}) {
+  const due = dueCareEvents(garden);
+  if (due.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="care">
+      <h2>Care</h2>
+      <ul aria-label="Care events">
+        {due.map((event) => (
+          <li key={event.id}>
+            <p>{careEventLabel(event)}</p>
+            <button type="button" onClick={() => onMarkCareEventDone(event.id)}>
+              Mark done
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function PlantingList({
   garden,
   onSetStay,
   onOverrideSoil,
+  onEndPlantingAsFailed,
 }: {
   garden: GardenBook;
   onSetStay: GardenSurfaceProps["onSetStay"];
   onOverrideSoil: GardenSurfaceProps["onOverrideSoil"];
+  onEndPlantingAsFailed: (plantingId: string) => void;
 }) {
   return (
     <div className="areas">
@@ -89,6 +134,13 @@ function PlantingList({
                       ) : (
                         <button type="button" onClick={() => onSetStay(planting.id, "in-bed")}>
                           Bring back to the Bed
+                        </button>
+                      )}
+                      {planting.end === "failed" ? (
+                        <p>This Planting failed.</p>
+                      ) : (
+                        <button type="button" onClick={() => onEndPlantingAsFailed(planting.id)}>
+                          End this Planting as failed
                         </button>
                       )}
                     </li>

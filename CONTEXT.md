@@ -19,16 +19,24 @@ _Avoid_: user, owner, wife, household account
 ## Plants
 
 **Category**:
-A top-level browse group: fruit trees, herbs, vegetables, flowers, shrubs, bushes, trees.
-_Avoid_: type, class
+A top-level browse group: fruit trees, herbs, vegetables, flowers, shrubs, trees, vines. Shrubs includes bushes.
+_Avoid_: type, class, bushes
 
 **Kind**:
 A common plant the Gardener would name in conversation (tomato, Thai basil, peach). The browse rung between Category and Variety.
 _Avoid_: species, crop
 
 **Variety**:
-A named cultivar she would buy or seed. What a Catalog page and a Planting both point at.
+A named cultivar she would buy or seed. What a Catalog page and a Planting both point at. The Catalog aims to include every Variety that can be grown at the Growing place, not a shortlist.
 _Avoid_: plant (overloaded), species
+
+**Fit**:
+How strong a Variety is as a candidate for this Garden at this Growing place, from strong to weak. Weak Fit stays in the Catalog; the Gardener filters.
+_Avoid_: score, rank, recommendation (a Care event can recommend an action; Fit is not a Care event)
+
+**Suggestion**:
+A Variety offered next to another Variety as another candidate to consider.
+_Avoid_: similar, related, companion (companion is not decided)
 
 **Kitchen tradition**:
 Asian, American, or both — the cooking the Gardener uses a Variety for. Only for Varieties grown to eat or use in the kitchen.
@@ -41,6 +49,18 @@ _Avoid_: decoration, beauty plant, landscaping plant, native-only
 **Winter fate**:
 How a Variety is expected to get through winter at the Growing place: bring in, leave out, dies — replant, or protect in place.
 _Avoid_: hardiness (the USDA zone is related; it is not this)
+
+**Difficulty**:
+How hard a Variety is to grow at the Growing place: easy, moderate, or fussy, plus a one-line why.
+_Avoid_: skill level, hardiness
+
+**Harvest**:
+How productive a Variety is at the Growing place: light, solid, or heavy, plus a one-line why.
+_Avoid_: yield, crop
+
+**Technique**:
+A how-to page (frost cloth, staking, watering) that Varieties can link to. Techniques also have their own section.
+_Avoid_: guide, article, tip
 
 ## Planted space
 
@@ -56,9 +76,17 @@ _Avoid_: plot, container, spot
 The Variety a Bed is meant to grow, lasting across years.
 _Avoid_: assignment, rotation, intent
 
+**Soil**:
+The Variety's default soil and fertilizer advice for this climate. A Bed may override it.
+_Avoid_: dirt, mix, medium
+
 **Planting**:
-One season of a Variety actually growing in a Bed. A new Planting starts each time it goes in; the Bed plan remembers what belongs there.
+One season of a Variety actually growing in a Bed. A new Planting starts each time it goes in; the Bed plan remembers what belongs there. A Planting starts from seed, transplant, or tree, on a planted-on date.
 _Avoid_: instance, entry, crop
+
+**Start**:
+How a Planting went in: seed, transplant, or tree.
+_Avoid_: method, source
 
 **Stay**:
 Whether a Planting is in its Bed or brought indoors. Stay does not change Area.
@@ -85,5 +113,5 @@ _Avoid_: source, vendor
 ## Care
 
 **Care event**:
-A thing the Garden needs now: water, harvest, replant, or a weather-forced change (frost tonight, rain already watered). The Gardener is told on the lock screen.
+A thing the Garden needs now: water, harvest, replant, set aside seeds, or a weather-forced change (frost tonight, rain already watered). The Gardener is told on the lock screen. She marks a Care event done; enough rain can dismiss a water Care event.
 _Avoid_: reminder, notification, task

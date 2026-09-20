@@ -8,10 +8,13 @@ import {
   currentPlantings,
   currentPlantingsByArea,
   dueCareEvents,
+  fertilizerAdviceFor,
+  soilFor,
   type Area,
   type GardenBook,
   type Start,
   type StartPlanting,
+  type Stay,
 } from "./garden";
 
 type GardenSurfaceProps = {
@@ -19,6 +22,8 @@ type GardenSurfaceProps = {
   garden: GardenBook;
   onNameBed: (area: Area, name: string) => void;
   onStartPlanting: (planting: StartPlanting) => string | null;
+  onSetStay: (plantingId: string, stay: Stay) => void;
+  onOverrideSoil: (area: Area, bedName: string, soil: string) => void;
   onMarkCareEventDone: (careEventId: string) => void;
   onEndPlantingAsFailed: (plantingId: string) => void;
 };
@@ -28,6 +33,8 @@ export function GardenSurface({
   garden,
   onNameBed,
   onStartPlanting,
+  onSetStay,
+  onOverrideSoil,
   onMarkCareEventDone,
   onEndPlantingAsFailed,
 }: GardenSurfaceProps) {
@@ -46,7 +53,12 @@ export function GardenSurface({
       ) : (
         <>
           <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
-          <PlantingList garden={garden} onEndPlantingAsFailed={onEndPlantingAsFailed} />
+          <PlantingList
+            garden={garden}
+            onSetStay={onSetStay}
+            onOverrideSoil={onOverrideSoil}
+            onEndPlantingAsFailed={onEndPlantingAsFailed}
+          />
         </>
       )}
       <NameBedForm onNameBed={onNameBed} />
@@ -86,9 +98,13 @@ function CareList({
 
 function PlantingList({
   garden,
+  onSetStay,
+  onOverrideSoil,
   onEndPlantingAsFailed,
 }: {
   garden: GardenBook;
+  onSetStay: GardenSurfaceProps["onSetStay"];
+  onOverrideSoil: GardenSurfaceProps["onOverrideSoil"];
   onEndPlantingAsFailed: (plantingId: string) => void;
 }) {
   return (
@@ -96,29 +112,84 @@ function PlantingList({
       {currentPlantingsByArea(garden).map(({ area, beds }) => (
         <section key={area}>
           <h2>{area}</h2>
-          {beds.map((bed) => (
-            <article key={bed.name}>
-              <h3>{bed.name}</h3>
-              {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
-              <ul className="plantings">
-                {bed.plantings.map((planting) => (
-                  <li key={planting.id}>
-                    <p>{`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}</p>
-                    {planting.end === "failed" ? (
-                      <p>This Planting failed.</p>
-                    ) : (
-                      <button type="button" onClick={() => onEndPlantingAsFailed(planting.id)}>
-                        End this Planting as failed
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
+          {beds.map((bed) => {
+            const soil = soilFor(bed, bed.plantings);
+            const fertilizer = fertilizerAdviceFor(bed, bed.plantings);
+
+            return (
+              <article key={bed.name}>
+                <h3>{bed.name}</h3>
+                {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
+                {soil ? <p>Soil: {soil}</p> : null}
+                {fertilizer ? <p>Fertilizer advice: {fertilizer}</p> : null}
+                <ul className="plantings">
+                  {bed.plantings.map((planting) => (
+                    <li key={planting.id}>
+                      <p>{`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}</p>
+                      <p>Stay: {planting.stay}</p>
+                      {planting.stay === "in-bed" ? (
+                        <button type="button" onClick={() => onSetStay(planting.id, "indoors")}>
+                          Bring indoors
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => onSetStay(planting.id, "in-bed")}>
+                          Bring back to the Bed
+                        </button>
+                      )}
+                      {planting.end === "failed" ? (
+                        <p>This Planting failed.</p>
+                      ) : (
+                        <button type="button" onClick={() => onEndPlantingAsFailed(planting.id)}>
+                          End this Planting as failed
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <OverrideSoilForm
+                  bedName={bed.name}
+                  onOverride={(next) => onOverrideSoil(area, bed.name, next)}
+                />
+              </article>
+            );
+          })}
         </section>
       ))}
     </div>
+  );
+}
+
+function OverrideSoilForm({
+  bedName,
+  onOverride,
+}: {
+  bedName: string;
+  onOverride: (soil: string) => void;
+}) {
+  const [soil, setSoil] = useState("");
+
+  return (
+    <form
+      className="garden-form"
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!soil.trim()) {
+          return;
+        }
+        onOverride(soil);
+        setSoil("");
+      }}
+    >
+      <label>
+        Soil override for {bedName}
+        <input
+          name="soilOverride"
+          value={soil}
+          onChange={(event) => setSoil(event.target.value)}
+        />
+      </label>
+      <button type="submit">Override Soil for {bedName}</button>
+    </form>
   );
 }
 

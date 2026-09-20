@@ -28,6 +28,7 @@ export type Variety = {
   fit: Fit;
   why: string;
   kitchenTradition?: KitchenTradition | "none";
+  seedSaveCount?: number;
 };
 
 export function slugFor(value: string): string {

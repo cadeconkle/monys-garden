@@ -4,8 +4,10 @@ import type { Variety } from "./catalog";
 import {
   AREAS,
   STARTS,
+  careEventLabel,
   currentPlantings,
   currentPlantingsByArea,
+  dueCareEvents,
   type Area,
   type GardenBook,
   type Start,
@@ -17,6 +19,8 @@ type GardenSurfaceProps = {
   garden: GardenBook;
   onNameBed: (area: Area, name: string) => void;
   onStartPlanting: (planting: StartPlanting) => string | null;
+  onMarkCareEventDone: (careEventId: string) => void;
+  onEndPlantingAsFailed: (plantingId: string) => void;
 };
 
 export function GardenSurface({
@@ -24,6 +28,8 @@ export function GardenSurface({
   garden,
   onNameBed,
   onStartPlanting,
+  onMarkCareEventDone,
+  onEndPlantingAsFailed,
 }: GardenSurfaceProps) {
   const plantings = currentPlantings(garden);
 
@@ -38,7 +44,10 @@ export function GardenSurface({
           </p>
         </>
       ) : (
-        <PlantingList garden={garden} />
+        <>
+          <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
+          <PlantingList garden={garden} onEndPlantingAsFailed={onEndPlantingAsFailed} />
+        </>
       )}
       <NameBedForm onNameBed={onNameBed} />
       <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
@@ -46,7 +55,42 @@ export function GardenSurface({
   );
 }
 
-function PlantingList({ garden }: { garden: GardenBook }) {
+function CareList({
+  garden,
+  onMarkCareEventDone,
+}: {
+  garden: GardenBook;
+  onMarkCareEventDone: (careEventId: string) => void;
+}) {
+  const due = dueCareEvents(garden);
+  if (due.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="care">
+      <h2>Care</h2>
+      <ul aria-label="Care events">
+        {due.map((event) => (
+          <li key={event.id}>
+            <p>{careEventLabel(event)}</p>
+            <button type="button" onClick={() => onMarkCareEventDone(event.id)}>
+              Mark done
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function PlantingList({
+  garden,
+  onEndPlantingAsFailed,
+}: {
+  garden: GardenBook;
+  onEndPlantingAsFailed: (plantingId: string) => void;
+}) {
   return (
     <div className="areas">
       {currentPlantingsByArea(garden).map(({ area, beds }) => (
@@ -57,9 +101,16 @@ function PlantingList({ garden }: { garden: GardenBook }) {
               <h3>{bed.name}</h3>
               {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
               <ul className="plantings">
-                {bed.plantings.map((planting, index) => (
-                  <li key={`${planting.plantedOn}-${planting.start}-${index}`}>
-                    {`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}
+                {bed.plantings.map((planting) => (
+                  <li key={planting.id}>
+                    <p>{`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}</p>
+                    {planting.end === "failed" ? (
+                      <p>This Planting failed.</p>
+                    ) : (
+                      <button type="button" onClick={() => onEndPlantingAsFailed(planting.id)}>
+                        End this Planting as failed
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

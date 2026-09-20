@@ -29,7 +29,7 @@ export function GardenApp({
   const [error, setError] = useState<string | null>(null);
   const [favorites] = useState(createFavorites);
   const [lists] = useState(createLists);
-  const [, setSaved] = useState(0);
+  const [, setRevision] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,9 +105,9 @@ export function GardenApp({
             <VarietyPage
               catalog={catalog}
               favorites={favorites}
-              onFavoritesChange={() => setSaved((n) => n + 1)}
+              onFavoritesChange={() => setRevision((n) => n + 1)}
               lists={lists}
-              onListsChange={() => setSaved((n) => n + 1)}
+              onListsChange={() => setRevision((n) => n + 1)}
             />
           }
         />
@@ -117,7 +117,7 @@ export function GardenApp({
         />
         <Route
           path="/lists"
-          element={<ListsPage lists={lists} onListsChange={() => setSaved((n) => n + 1)} />}
+          element={<ListsPage lists={lists} onListsChange={() => setRevision((n) => n + 1)} />}
         />
         <Route
           path="/lists/:listSlug"
@@ -125,7 +125,7 @@ export function GardenApp({
             <ListPage
               catalog={catalog}
               lists={lists}
-              onListsChange={() => setSaved((n) => n + 1)}
+              onListsChange={() => setRevision((n) => n + 1)}
             />
           }
         />

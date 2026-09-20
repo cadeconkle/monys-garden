@@ -28,7 +28,7 @@ export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
     <main className="surface">
       <h1>Catalog</h1>
       <p>Browse by Category, then Kind, then Variety. Weak Fit stays listed.</p>
-      <KeptNav />
+      <FavoritesAndListsNav />
       <CatalogFilters />
       {catalog.length === 0 ? (
         <p>No Varieties yet. Every Variety that can live at this Growing place will land here.</p>
@@ -154,7 +154,7 @@ export function VarietyPage({
     <main className="surface">
       <Trail category={category} kind={kind} />
       <h1>{variety.name}</h1>
-      <KeptNav />
+      <FavoritesAndListsNav />
       <VarietyFacts variety={variety} sentence />
       <Heart
         variety={variety}
@@ -168,9 +168,9 @@ export function VarietyPage({
   );
 }
 
-function KeptNav() {
+function FavoritesAndListsNav() {
   return (
-    <nav className="kept" aria-label="Kept Varieties">
+    <nav className="favorites-and-lists" aria-label="Favorites and Lists">
       <Link to="/favorites">Favorites</Link>
       <Link to="/lists">Lists</Link>
     </nav>
@@ -190,7 +190,7 @@ function ListMembership({
   if (named.length === 0) {
     return (
       <p>
-        <Link to="/lists">Create a List</Link> to keep this Variety.
+        <Link to="/lists">Create a List</Link> for this Variety.
       </p>
     );
   }
@@ -287,7 +287,7 @@ function VarietyFacts({ variety, sentence }: { variety: Variety; sentence?: bool
 
 function kitchenUseLine(variety: Variety): string | null {
   if (variety.kitchenTradition === "none") {
-    return "Ornamental — American-yard beauty.";
+    return "Ornamental — an American-yard look.";
   }
   if (variety.kitchenTradition === "Asian") {
     return "Asian kitchen.";

@@ -21,15 +21,13 @@ const FIT_STRENGTH: Record<Fit, number> = {
 
 export const KITCHEN_TRADITIONS = ["Asian", "American", "both"] as const;
 export type KitchenTradition = (typeof KITCHEN_TRADITIONS)[number];
-export type KitchenUse = KitchenTradition | "none";
-
 export type Variety = {
   name: string;
   category: Category;
   kind: string;
   fit: Fit;
   why: string;
-  kitchenTradition?: KitchenUse;
+  kitchenTradition?: KitchenTradition | "none";
 };
 
 export function slugFor(value: string): string {

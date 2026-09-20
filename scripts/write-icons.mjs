@@ -33,7 +33,7 @@ function png(size) {
   for (let y = 0; y < size; y += 1) {
     pixels[y * (size * 3 + 1)] = 0;
     for (let x = 0; x < size; x += 1) {
-      set(x, y, y > size * 0.78 ? 142 : 197, y > size * 0.78 ? 52 : 214, y > size * 0.78 ? 36 : 164);
+      set(x, y, y > size * 0.78 ? 142 : 212, y > size * 0.78 ? 52 : 183, y > size * 0.78 ? 36 : 138);
     }
   }
 

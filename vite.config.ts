@@ -17,7 +17,7 @@ export default defineConfig({
         short_name: "Garden",
         description: "The household garden in Fuquay-Varina, North Carolina",
         theme_color: "#1F6A3C",
-        background_color: "#C5D6A4",
+        background_color: "#D4B78A",
         display: "standalone",
         start_url: "/",
         icons: [

@@ -27,7 +27,7 @@ A common plant the Gardener would name in conversation (tomato, Thai basil, peac
 _Avoid_: species, crop
 
 **Variety**:
-A named cultivar she would buy or seed. What a Catalog page and a Planting both point at. The Catalog aims to include every Variety that can be grown at the Growing place, not a shortlist.
+A named cultivar she would buy or seed. What a Catalog page and a Planting both point at. The Catalog aims to include every Variety that can be grown at the Growing place. Every Variety has a name, Category, Kind, Fit, and a why; photoreal art and full care may come later, strong Fit and anything she plants first.
 _Avoid_: plant (overloaded), species
 
 **Fit**:
@@ -35,8 +35,8 @@ How strong a Variety is as a candidate for this Garden at this Growing place, fr
 _Avoid_: score, rank, recommendation (a Care event can recommend an action; Fit is not a Care event)
 
 **Suggestion**:
-A Variety offered next to another Variety as another candidate to consider.
-_Avoid_: similar, related, companion (companion is not decided)
+A stronger-Fit Variety of the same Kind. Not a companion. Not a substitute across Kinds.
+_Avoid_: similar, related, companion
 
 **Kitchen tradition**:
 Asian, American, or both — the cooking the Gardener uses a Variety for. Only for Varieties grown to eat or use in the kitchen.
@@ -69,12 +69,12 @@ One of Front, Side, Back, or Patio — a part of the Garden. Indoors is never an
 _Avoid_: zone, yard, indoors
 
 **Bed**:
-A named spot inside an Area: an in-ground bed, a row, a pot, or a group of pots.
+A named spot inside an Area: an in-ground bed, a row, a pot, or a group of pots. One Variety per Bed. Plants that share ground (tomato and basil) are neighboring Beds, not one Bed.
 _Avoid_: plot, container, spot
 
 **Bed plan**:
-The Variety a Bed is meant to grow, lasting across years.
-_Avoid_: assignment, rotation, intent
+The one Variety a Bed is meant to grow, lasting across years.
+_Avoid_: assignment, rotation, intent, companions
 
 **Soil**:
 The Variety's default soil and fertilizer advice for this climate. A Bed may override it.

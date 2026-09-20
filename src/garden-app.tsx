@@ -12,11 +12,14 @@ import {
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
 import {
+  dueLockScreenNotices,
   emptyGarden,
   endPlantingAsFailed,
   ensureFrostCareEvent,
   markCareEventDone,
   nameBed,
+  overrideSoil,
+  setStay,
   startPlanting,
   type GardenBook,
 } from "./garden";
@@ -28,6 +31,7 @@ import {
   type Gardener,
   type Household,
 } from "./household";
+import type { LockScreen } from "./lock-screen";
 import { createLists } from "./lists";
 import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
@@ -42,6 +46,7 @@ export function GardenApp({
   shops = curatedShops,
   weather,
   loadForecast,
+  lockScreen,
 }: {
   household: Household;
   catalog?: readonly Variety[];
@@ -49,6 +54,7 @@ export function GardenApp({
   shops?: readonly Shop[];
   weather?: GrowingPlaceForecast;
   loadForecast?: () => Promise<GrowingPlaceForecast>;
+  lockScreen?: LockScreen;
 }) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
@@ -113,6 +119,20 @@ export function GardenApp({
     };
   }, [household]);
 
+  useEffect(() => {
+    if (!gardener) {
+      return;
+    }
+    void lockScreen?.offer?.();
+  }, [gardener, lockScreen]);
+
+  useEffect(() => {
+    if (!gardener) {
+      return;
+    }
+    void lockScreen?.sync(dueLockScreenNotices(garden, forecast));
+  }, [gardener, garden, forecast, lockScreen]);
+
   if (!ready) {
     return (
       <main className="gate">
@@ -168,6 +188,12 @@ export function GardenApp({
                 });
                 return plantingError;
               }}
+              onSetStay={(plantingId, stay) =>
+                setGarden((current) => setStay(current, plantingId, stay))
+              }
+              onOverrideSoil={(area, bedName, soil) =>
+                setGarden((current) => overrideSoil(current, area, bedName, soil))
+              }
               onMarkCareEventDone={(careEventId) =>
                 setGarden((current) =>
                   markCareEventDone(ensureFrostCareEvent(current, forecast), careEventId),

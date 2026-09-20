@@ -1,7 +1,8 @@
-import { fireEvent, within, type RenderResult } from "@testing-library/react";
+import { fireEvent, waitFor, within, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { VarietyFinish } from "./catalog";
+import type { Variety, VarietyFinish } from "./catalog";
 import { createHousehold } from "./household";
+import { createLockScreen } from "./lock-screen";
 import { openAsGardener, openGarden } from "./open-garden";
 import type { ForecastDay, GrowingPlaceForecast } from "./weather";
 
@@ -1171,6 +1172,119 @@ test("set aside seeds uses the Variety's seed-save count, not a made-up number",
   expect(garden.queryByText("Set aside seeds of Celebrity tomato")).toBeNull();
 });
 
+test("an open Care event is due as a lock-screen notice", async () => {
+  const lockScreen = createLockScreen();
+  const garden = openGarden({
+    lockScreen,
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  await waitFor(() => {
+    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
+      "Water Celebrity tomato in Tomato row",
+      "Harvest Celebrity tomato in Tomato row",
+      "Replant Celebrity tomato in Tomato row",
+      "Set aside seeds of Celebrity tomato",
+    ]);
+  });
+});
+
+test("marking a Care event done clears the lock-screen notice", async () => {
+  const lockScreen = createLockScreen();
+  const garden = openGarden({
+    lockScreen,
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  const water = garden.getByText("Water Celebrity tomato in Tomato row").closest("li");
+  expect(water).not.toBeNull();
+  await userEvent.click(within(water!).getByRole("button", { name: "Mark done" }));
+
+  expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  await waitFor(() => {
+    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
+      "Harvest Celebrity tomato in Tomato row",
+      "Replant Celebrity tomato in Tomato row",
+      "Set aside seeds of Celebrity tomato",
+    ]);
+  });
+});
+
+test("a second profile does not receive a lock-screen notice", async () => {
+  const household = createHousehold();
+  const catalog: Variety[] = [
+    {
+      name: "Celebrity tomato",
+      category: "vegetables",
+      kind: "tomato",
+      fit: "fair",
+      why: "Sets fruit here, then stalls in July humidity.",
+    },
+  ];
+  const gardenerLockScreen = createLockScreen();
+  const strangerLockScreen = createLockScreen();
+  const first = openGarden({ household, catalog, lockScreen: gardenerLockScreen });
+
+  await openAsGardener(first);
+  await nameTheBed(first, "Back", "Tomato row");
+  await startThePlanting(first, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  await waitFor(() => {
+    expect(gardenerLockScreen.due().map((notice) => notice.label)).toContain(
+      "Water Celebrity tomato in Tomato row",
+    );
+  });
+
+  const stranger = openGarden({ household, catalog, lockScreen: strangerLockScreen });
+  await openAsGardener(stranger, {
+    email: "cade@garden.test",
+    password: "another-notebook",
+  });
+
+  expect(stranger.getByRole("alert")).toHaveTextContent("There is only one Gardener.");
+  expect(strangerLockScreen.due()).toEqual([]);
+});
+
 test("ending a Planting early as failed stops further water Care events", async () => {
   const garden = openGarden({
     catalog: [
@@ -1449,6 +1563,108 @@ test("a Variety can show a Buy place", async () => {
   await userEvent.click(garden.getByRole("link", { name: "grocery at H Mart" }));
   expect(await garden.findByRole("heading", { name: "Shops" })).toBeVisible();
   expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
+});
+
+test("setting Stay to indoors does not change Area, and the Gardener can bring the Planting back to its Bed", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Lemon pot");
+  await startThePlanting(garden, {
+    variety: "Improved Meyer lemon",
+    bed: "Patio · Lemon pot",
+    plantedOn: "2025-04-12",
+    start: "tree",
+  });
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Lemon pot" })).toBeVisible();
+  expect(garden.getByText("Improved Meyer lemon · tree · 2025-04-12")).toBeVisible();
+  expect(garden.getByText("Stay: in-bed")).toBeVisible();
+  expect(garden.queryByRole("heading", { name: /kitchen/i })).toBeNull();
+
+  await userEvent.click(garden.getByRole("button", { name: "Bring indoors" }));
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByText("Stay: indoors")).toBeVisible();
+  expect(garden.queryByText("Stay: in-bed")).toBeNull();
+  expect(garden.queryByRole("heading", { name: /kitchen/i })).toBeNull();
+  expect(garden.queryByRole("heading", { name: /indoors/i })).toBeNull();
+  expect(garden.getByText("Improved Meyer lemon · tree · 2025-04-12")).toBeVisible();
+
+  await userEvent.click(garden.getByRole("button", { name: "Bring back to the Bed" }));
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByText("Stay: in-bed")).toBeVisible();
+  expect(garden.queryByText("Stay: indoors")).toBeNull();
+});
+
+test("a Bed can override Soil; the Variety default remains when there is no override", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+        soil: "citrus pot mix",
+        fertilizer: "monthly citrus food in summer",
+      },
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+        soil: "loose garden loam",
+        fertilizer: "a light spring feed",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Lemon pot");
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Improved Meyer lemon",
+    bed: "Patio · Lemon pot",
+    plantedOn: "2025-04-12",
+    start: "tree",
+  });
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Soil: citrus pot mix")).toBeVisible();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
+  expect(garden.queryByText(/fertilizer is due/i)).toBeNull();
+  expect(garden.queryByRole("button", { name: /fertilizer/i })).toBeNull();
+  expect(
+    within(garden.getByRole("list", { name: "Care events" })).queryByText(/fertilizer/i),
+  ).toBeNull();
+
+  await userEvent.type(garden.getByLabelText("Soil override for Lemon pot"), "amended clay");
+  await userEvent.click(garden.getByRole("button", { name: "Override Soil for Lemon pot" }));
+
+  expect(garden.getByText("Soil: amended clay")).toBeVisible();
+  expect(garden.queryByText("citrus pot mix")).toBeNull();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
 });
 
 function rainyWeek(): GrowingPlaceForecast {

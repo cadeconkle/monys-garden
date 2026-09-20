@@ -347,7 +347,11 @@ button:disabled {
 }
 
 .plantings button {
-  margin-top: 0;
+  margin-top: 0.2rem;
+}
+
+.areas .garden-form {
+  margin-top: 0.8rem;
 }
 
 .forecast {

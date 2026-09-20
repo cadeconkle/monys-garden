@@ -1,10 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { createDeviceLockScreen } from "./device-lock-screen";
 import { GardenApp } from "./garden-app";
 import { createHousehold } from "./household";
 import { createNetlifyHousehold } from "./netlify-household";
 import "./styles.css";
+
+const lockScreen = createDeviceLockScreen();
 
 const root = document.getElementById("root");
 if (!root) {
@@ -16,6 +19,7 @@ createRoot(root).render(
     <BrowserRouter>
       <GardenApp
         household={import.meta.env.PROD ? createNetlifyHousehold() : createHousehold()}
+        lockScreen={lockScreen}
       />
     </BrowserRouter>
   </StrictMode>,

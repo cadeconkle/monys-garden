@@ -21,3 +21,4 @@ The site is a Vite + React app on Netlify. After the first production deploy:
 1. Enable Identity in Project configuration
 2. Turn on autoconfirm so the first opening does not wait on email
 3. Leave registration open — the app still refuses a second Gardener
+4. For lock-screen Care events when the app is not open, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address)

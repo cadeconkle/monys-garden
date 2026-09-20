@@ -220,6 +220,18 @@ export function careEventLabel(event: CareEvent): string {
   return `${verb} ${event.varietyName} in ${event.bedName}`;
 }
 
+export type LockScreenNotice = {
+  id: string;
+  label: string;
+};
+
+export function dueLockScreenNotices(garden: GardenBook): LockScreenNotice[] {
+  return dueCareEvents(garden).map((event) => ({
+    id: event.id,
+    label: careEventLabel(event),
+  }));
+}
+
 function careEventsFor(planting: StartPlanting, plantingId: string): CareEvent[] {
   return CARE_EVENT_TYPES.map((type) => ({
     id: crypto.randomUUID(),

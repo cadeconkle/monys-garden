@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.svg", "lock-screen-sw.js"],
+      workbox: {
+        importScripts: ["lock-screen-sw.js"],
+      },
       manifest: {
         name: "Mony's Garden",
         short_name: "Garden",

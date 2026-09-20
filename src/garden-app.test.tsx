@@ -1,4 +1,4 @@
-import { within } from "@testing-library/react";
+import { fireEvent, within, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createHousehold } from "./household";
 import { openAsGardener, openGarden } from "./open-garden";
@@ -554,3 +554,177 @@ test("Catalog categories include vines and keep bushes inside shrubs", async () 
   expect(garden.getByRole("link", { name: "vines" })).toBeVisible();
   expect(garden.queryByRole("link", { name: "bushes" })).toBeNull();
 });
+
+test("the Gardener can name a Bed and start a Planting", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByRole("heading", { name: "Back" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Tomato row" })).toBeVisible();
+  expect(garden.getByText("Celebrity tomato · transplant · 2026-04-12")).toBeVisible();
+});
+
+test("a Bed cannot hold two Varieties; a second Variety needs a neighboring Bed", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+  await startThePlanting(garden, {
+    variety: "Queenette Thai basil",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "seed",
+  });
+
+  expect(garden.getByRole("alert")).toHaveTextContent(
+    "A Bed holds one Variety. Name a neighboring Bed for Queenette Thai basil.",
+  );
+  expect(garden.queryByText(/Queenette Thai basil ·/)).toBeNull();
+
+  await nameTheBed(garden, "Back", "Basil at the feet");
+  await startThePlanting(garden, {
+    variety: "Queenette Thai basil",
+    bed: "Back · Basil at the feet",
+    plantedOn: "2026-04-12",
+    start: "seed",
+  });
+
+  expect(garden.getByRole("heading", { name: "Tomato row" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Basil at the feet" })).toBeVisible();
+  expect(garden.getByText("Celebrity tomato · transplant · 2026-04-12")).toBeVisible();
+  expect(garden.getByText("Queenette Thai basil · seed · 2026-04-12")).toBeVisible();
+});
+
+test("starting a Planting writes the Bed plan to that Variety", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Bed plan: Celebrity tomato")).toBeVisible();
+});
+
+test("a later season in the same Bed is a new Planting; the old Planting is unchanged", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "seed",
+  });
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2027-04-10",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Celebrity tomato · seed · 2026-04-12")).toBeVisible();
+  expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
+  expect(garden.getByText("Bed plan: Celebrity tomato")).toBeVisible();
+});
+
+test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created as an Area", async () => {
+  const garden = openGarden();
+
+  await openAsGardener(garden);
+
+  const area = garden.getByLabelText("Area");
+  expect(within(area).getByRole("option", { name: "Front" })).toBeVisible();
+  expect(within(area).getByRole("option", { name: "Side" })).toBeVisible();
+  expect(within(area).getByRole("option", { name: "Back" })).toBeVisible();
+  expect(within(area).getByRole("option", { name: "Patio" })).toBeVisible();
+  expect(within(area).queryByRole("option", { name: /kitchen/i })).toBeNull();
+  expect(within(area).queryByRole("option", { name: /indoors/i })).toBeNull();
+});
+
+async function nameTheBed(garden: RenderResult, area: string, name: string) {
+  await userEvent.selectOptions(garden.getByLabelText("Area"), area);
+  const bedName = garden.getByLabelText("Bed name");
+  await userEvent.clear(bedName);
+  await userEvent.type(bedName, name);
+  await userEvent.click(garden.getByRole("button", { name: "Name the Bed" }));
+}
+
+async function startThePlanting(
+  garden: RenderResult,
+  planting: { variety: string; bed: string; plantedOn: string; start: string },
+) {
+  await userEvent.selectOptions(garden.getByLabelText("Variety"), planting.variety);
+  await userEvent.selectOptions(garden.getByLabelText("Bed"), planting.bed);
+  fireEvent.change(garden.getByLabelText("Planted on"), { target: { value: planting.plantedOn } });
+  await userEvent.selectOptions(garden.getByLabelText("Start"), planting.start);
+  await userEvent.click(garden.getByRole("button", { name: "Start the Planting" }));
+}

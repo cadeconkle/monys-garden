@@ -23,7 +23,8 @@ import {
   type VarietyFinish,
 } from "./catalog";
 import type { BuyPlace } from "./shops";
-import { plantingWindowAdvice, type GrowingPlaceForecast } from "./weather";
+import type { GrowingPlaceForecast } from "./forecast";
+import { plantingWindowAdvice } from "./when-to-plant";
 
 export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
   const [search] = useSearchParams();
@@ -174,7 +175,7 @@ export function VarietyPage({
         favorites={favorites}
         onFavoritesChange={onFavoritesChange}
       />
-      <PlantingWindowAdvice kind={variety.kind} weather={weather} />
+      <WhenToPlant variety={variety} planted={planted} weather={weather} />
       <ListMembership variety={variety} lists={lists} onListsChange={onListsChange} />
       {variety.buyPlace ? <BuyPlaceFacts buyPlace={variety.buyPlace} /> : null}
       {showsFinish(variety, planted) && variety.finish ? (
@@ -189,26 +190,26 @@ export function VarietyPage({
   );
 }
 
-function PlantingWindowAdvice({
-  kind,
+function WhenToPlant({
+  variety,
+  planted,
   weather,
 }: {
-  kind: string;
+  variety: Variety;
+  planted: readonly string[];
   weather?: GrowingPlaceForecast;
 }) {
-  if (!weather) {
-    return null;
-  }
-
-  const advice = plantingWindowAdvice(kind, weather);
-  if (!advice) {
+  const live = weather ? plantingWindowAdvice(variety, weather) : null;
+  const finished = showsFinish(variety, planted) ? variety.finish?.whenToPlant : null;
+  if (!live && !finished) {
     return null;
   }
 
   return (
-    <section className="planting-window">
-      <h2>Planting-window advice</h2>
-      <p>{advice}</p>
+    <section className="when-to-plant">
+      <h2>When to plant</h2>
+      {live ? <p>{live}</p> : null}
+      {finished ? <p>{finished}</p> : null}
     </section>
   );
 }
@@ -242,10 +243,6 @@ function FinishedCare({ finish }: { finish: VarietyFinish }) {
         <h2>Harvest</h2>
         <p>{finish.harvest.level}</p>
         <p>{finish.harvest.why}</p>
-      </section>
-      <section>
-        <h2>When to plant</h2>
-        <p>{finish.whenToPlant}</p>
       </section>
       <section>
         <h2>Time to harvest</h2>

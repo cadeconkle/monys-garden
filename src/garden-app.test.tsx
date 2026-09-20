@@ -1,10 +1,11 @@
 import { fireEvent, waitFor, within, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Variety, VarietyFinish } from "./catalog";
+import { applyWeatherToGarden } from "./garden";
+import { createMemoryGardenBook } from "./garden-book";
 import { createHousehold } from "./household";
-import { createLockScreen } from "./lock-screen";
 import { openAsGardener, openGarden } from "./open-garden";
-import type { ForecastDay, GrowingPlaceForecast } from "./weather";
+import type { ForecastDay, GrowingPlaceForecast } from "./forecast";
 
 async function goToCatalog(garden: RenderResult) {
   await userEvent.click(garden.getAllByRole("link", { name: "Catalog" })[0]);
@@ -1172,10 +1173,8 @@ test("set aside seeds uses the Variety's seed-save count, not a made-up number",
   expect(garden.queryByText("Set aside seeds of Celebrity tomato")).toBeNull();
 });
 
-test("an open Care event is due as a lock-screen notice", async () => {
-  const lockScreen = createLockScreen();
+test("an open Care event is due on the lock screen", async () => {
   const garden = openGarden({
-    lockScreen,
     catalog: [
       {
         name: "Celebrity tomato",
@@ -1196,21 +1195,15 @@ test("an open Care event is due as a lock-screen notice", async () => {
     start: "transplant",
   });
 
-  expect(garden.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
-  await waitFor(() => {
-    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
-      "Water Celebrity tomato in Tomato row",
-      "Harvest Celebrity tomato in Tomato row",
-      "Replant Celebrity tomato in Tomato row",
-      "Set aside seeds of Celebrity tomato",
-    ]);
-  });
+  const care = within(garden.getByRole("list", { name: "Care events" }));
+  expect(care.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  expect(care.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(care.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(care.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
 });
 
-test("marking a Care event done clears the lock-screen notice", async () => {
-  const lockScreen = createLockScreen();
+test("marking a Care event done clears it from the lock screen", async () => {
   const garden = openGarden({
-    lockScreen,
     catalog: [
       {
         name: "Celebrity tomato",
@@ -1235,17 +1228,14 @@ test("marking a Care event done clears the lock-screen notice", async () => {
   expect(water).not.toBeNull();
   await userEvent.click(within(water!).getByRole("button", { name: "Mark done" }));
 
+  const care = within(garden.getByRole("list", { name: "Care events" }));
   expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
-  await waitFor(() => {
-    expect(lockScreen.due().map((notice) => notice.label)).toEqual([
-      "Harvest Celebrity tomato in Tomato row",
-      "Replant Celebrity tomato in Tomato row",
-      "Set aside seeds of Celebrity tomato",
-    ]);
-  });
+  expect(care.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(care.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(care.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
 });
 
-test("a second profile does not receive a lock-screen notice", async () => {
+test("a second profile does not receive lock-screen Care events", async () => {
   const household = createHousehold();
   const catalog: Variety[] = [
     {
@@ -1256,9 +1246,7 @@ test("a second profile does not receive a lock-screen notice", async () => {
       why: "Sets fruit here, then stalls in July humidity.",
     },
   ];
-  const gardenerLockScreen = createLockScreen();
-  const strangerLockScreen = createLockScreen();
-  const first = openGarden({ household, catalog, lockScreen: gardenerLockScreen });
+  const first = openGarden({ household, catalog });
 
   await openAsGardener(first);
   await nameTheBed(first, "Back", "Tomato row");
@@ -1269,20 +1257,17 @@ test("a second profile does not receive a lock-screen notice", async () => {
     start: "transplant",
   });
 
-  await waitFor(() => {
-    expect(gardenerLockScreen.due().map((notice) => notice.label)).toContain(
-      "Water Celebrity tomato in Tomato row",
-    );
-  });
+  expect(first.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
 
-  const stranger = openGarden({ household, catalog, lockScreen: strangerLockScreen });
+  const stranger = openGarden({ household, catalog });
   await openAsGardener(stranger, {
     email: "cade@garden.test",
     password: "another-notebook",
   });
 
   expect(stranger.getByRole("alert")).toHaveTextContent("There is only one Gardener.");
-  expect(strangerLockScreen.due()).toEqual([]);
+  expect(stranger.queryByRole("heading", { name: "Garden" })).toBeNull();
+  expect(stranger.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
 });
 
 test("ending a Planting early as failed stops further water Care events", async () => {
@@ -1334,6 +1319,7 @@ test("enough rain dismisses an open water Care event", async () => {
   });
 
   await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
   await nameTheBed(garden, "Back", "Tomato row");
   await startThePlanting(garden, {
     variety: "Celebrity tomato",
@@ -1343,7 +1329,96 @@ test("enough rain dismisses an open water Care event", async () => {
   });
 
   expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  expect(garden.getByText("Rain already watered Celebrity tomato in Tomato row")).toBeVisible();
   expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+});
+
+test("a later dry day does not bring back water rain already dismissed", async () => {
+  const tomato: Variety = {
+    name: "Celebrity tomato",
+    category: "vegetables",
+    kind: "tomato",
+    fit: "fair",
+    why: "Sets fruit here, then stalls in July humidity.",
+  };
+  const gardenBook = createMemoryGardenBook();
+  const wet = openGarden({
+    catalog: [tomato],
+    gardenBook,
+    weather: rainyWeek(),
+  });
+
+  await openAsGardener(wet);
+  await wet.findByRole("heading", { name: "Garden" });
+  await nameTheBed(wet, "Back", "Tomato row");
+  await startThePlanting(wet, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(wet.getByText("Rain already watered Celebrity tomato in Tomato row")).toBeVisible();
+  await waitFor(async () => {
+    expect((await gardenBook.load()).plantings).toHaveLength(1);
+  });
+  wet.unmount();
+
+  const dry = openGarden({
+    catalog: [tomato],
+    gardenBook,
+    weather: dryWeek(),
+  });
+  await openAsGardener(dry);
+
+  expect(await dry.findByText("Rain already watered Celebrity tomato in Tomato row")).toBeVisible();
+  expect(dry.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+});
+
+test("weather still changes Care when the Garden is not open", async () => {
+  const tomato: Variety = {
+    name: "Celebrity tomato",
+    category: "vegetables",
+    kind: "tomato",
+    fit: "fair",
+    why: "Sets fruit here, then stalls in July humidity.",
+  };
+  const gardenBook = createMemoryGardenBook();
+  const open = openGarden({
+    catalog: [tomato],
+    gardenBook,
+    weather: dryWeek(),
+  });
+
+  await openAsGardener(open);
+  await open.findByRole("heading", { name: "Garden" });
+  await nameTheBed(open, "Back", "Tomato row");
+  await startThePlanting(open, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(open.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  await waitFor(async () => {
+    expect((await gardenBook.load()).plantings).toHaveLength(1);
+  });
+  open.unmount();
+
+  await gardenBook.save(applyWeatherToGarden(await gardenBook.load(), rainyWeek()));
+
+  const closedStorm = openGarden({
+    catalog: [tomato],
+    gardenBook,
+    weather: dryWeek(),
+  });
+  await openAsGardener(closedStorm);
+
+  expect(
+    await closedStorm.findByText("Rain already watered Celebrity tomato in Tomato row"),
+  ).toBeVisible();
+  expect(closedStorm.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
 });
 
 test("coming frost creates a frost Care event", async () => {
@@ -1361,6 +1436,7 @@ test("coming frost creates a frost Care event", async () => {
   });
 
   await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
   await nameTheBed(garden, "Back", "Tomato row");
   await startThePlanting(garden, {
     variety: "Celebrity tomato",
@@ -1372,18 +1448,20 @@ test("coming frost creates a frost Care event", async () => {
   expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
 });
 
-test("coming frost creates a frost Care event even when nothing is in the ground", async () => {
+test("coming frost does not create a frost Care event when nothing is in the ground", async () => {
   const garden = openGarden({
     weather: frostWeek(),
   });
 
   await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
 
   expect(garden.getByText("Nothing is in the ground yet.")).toBeVisible();
-  expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
+  expect(garden.queryByText("Cover for frost on 2026-04-03")).toBeNull();
+  expect(garden.queryByRole("heading", { name: "Care" })).toBeNull();
 });
 
-test("a Variety can show planting-window advice driven by the Growing-place forecast", async () => {
+test("a Variety can show when-to-plant driven by the Growing-place forecast", async () => {
   const garden = openGarden({
     catalog: [
       {
@@ -1398,17 +1476,18 @@ test("a Variety can show planting-window advice driven by the Growing-place fore
   });
 
   await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
   await goToCatalog(garden);
   await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
   await userEvent.click(garden.getByRole("link", { name: "tomato" }));
   await userEvent.click(garden.getByRole("link", { name: "Celebrity tomato" }));
 
   expect(await garden.findByRole("heading", { name: "Celebrity tomato" })).toBeVisible();
-  expect(garden.getByRole("heading", { name: "Planting-window advice" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "When to plant" })).toBeVisible();
   expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
 });
 
-test("planting-window advice uses the Growing-place frost pair when the week is above freezing", async () => {
+test("when-to-plant uses the Growing-place frost pair when the week is above freezing", async () => {
   const garden = openGarden({
     catalog: [
       {
@@ -1434,6 +1513,7 @@ test("planting-window advice uses the Growing-place frost pair when the week is 
   });
 
   await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
   await goToCatalog(garden);
   await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
   await userEvent.click(garden.getByRole("link", { name: "tomato" }));
@@ -1443,15 +1523,55 @@ test("planting-window advice uses the Growing-place frost pair when the week is 
   expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
 });
 
+test("when-to-plant from the forecast is only for Varieties that wait on frost", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Contender peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "strong",
+        why: "Sets fruit after our late frost.",
+        finish: {
+          photoreal: {
+            src: "/varieties/contender-peach.jpg",
+            alt: "Photoreal render of Contender peach",
+          },
+          winterFate: "leave out",
+          difficulty: { level: "easy", why: "Late bloom misses our April frost." },
+          harvest: { level: "solid", why: "A pie-worth of fruit." },
+          whenToPlant: "Set a bare-root tree in February, before bud swell.",
+          timeToHarvest: "Fruit in June to July.",
+          soil: "Well-drained loam.",
+          techniques: ["watering"],
+        },
+      },
+    ],
+    weather: frostWeek(),
+  });
+
+  await openAsGardener(garden);
+  await garden.findByRole("heading", { name: "Growing-place forecast" });
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Contender peach" }));
+
+  expect(await garden.findByRole("heading", { name: "Contender peach" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "When to plant" })).toBeVisible();
+  expect(garden.getByText("Set a bare-root tree in February, before bud swell.")).toBeVisible();
+  expect(garden.queryByText("Don't set peach out until this frost window.")).toBeNull();
+});
+
 test("the Garden shows a Growing-place forecast glance for Fuquay-Varina, not a weather app", async () => {
   const garden = openGarden({
-    weather: rainyWeek(),
+    loadForecast: async () => rainyWeek(),
   });
 
   await openAsGardener(garden);
 
   expect(garden.getByRole("heading", { name: "Garden" })).toBeVisible();
-  expect(garden.getByRole("heading", { name: "Growing-place forecast" })).toBeVisible();
+  expect(await garden.findByRole("heading", { name: "Growing-place forecast" })).toBeVisible();
   expect(garden.getByText("Today · 2026-06-15 · 84° / 68° · 0.4 in rain")).toBeVisible();
   expect(garden.getByText("This week")).toBeVisible();
   expect(garden.getByText("2026-06-16 · 86° / 70° · dry")).toBeVisible();
@@ -1666,6 +1786,19 @@ test("a Bed can override Soil; the Variety default remains when there is no over
   expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
   expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
 });
+
+function dryWeek(): GrowingPlaceForecast {
+  const week: ForecastDay[] = [
+    { date: "2026-06-16", highF: 86, lowF: 70, inchesOfRain: 0 },
+    { date: "2026-06-17", highF: 88, lowF: 71, inchesOfRain: 0 },
+    { date: "2026-06-18", highF: 87, lowF: 70, inchesOfRain: 0 },
+    { date: "2026-06-19", highF: 85, lowF: 69, inchesOfRain: 0 },
+    { date: "2026-06-20", highF: 84, lowF: 68, inchesOfRain: 0 },
+    { date: "2026-06-21", highF: 86, lowF: 70, inchesOfRain: 0 },
+    { date: "2026-06-22", highF: 87, lowF: 71, inchesOfRain: 0 },
+  ];
+  return { today: week[0], week };
+}
 
 function rainyWeek(): GrowingPlaceForecast {
   const week: ForecastDay[] = [

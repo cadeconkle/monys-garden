@@ -1,5 +1,6 @@
 import type { Variety } from "./catalog";
-import { enoughRain, frostNight, type GrowingPlaceForecast } from "./weather";
+import type { FrostNight, GrowingPlaceForecast } from "./forecast";
+import { enoughRain, frostNight } from "./weather";
 
 export const AREAS = ["Front", "Side", "Back", "Patio"] as const;
 export type Area = (typeof AREAS)[number];
@@ -19,7 +20,11 @@ export const PLANTING_CARE_EVENT_TYPES = [
   "replant",
   "set-aside-seeds",
 ] as const;
-export const CARE_EVENT_TYPES = [...PLANTING_CARE_EVENT_TYPES, "frost"] as const;
+export const CARE_EVENT_TYPES = [
+  ...PLANTING_CARE_EVENT_TYPES,
+  "frost",
+  "rain-already-watered",
+] as const;
 export type CareEventType = (typeof CARE_EVENT_TYPES)[number];
 
 export type Bed = {
@@ -47,7 +52,7 @@ export type CareEvent = {
   varietyName?: string;
   bedName?: string;
   seedSaveCount?: number;
-  frostOn?: string;
+  frostNight?: FrostNight;
   done: boolean;
 };
 
@@ -200,6 +205,17 @@ export function markCareEventDone(garden: GardenBook, careEventId: string): Gard
   };
 }
 
+export function applyWeatherToGarden(
+  garden: GardenBook,
+  forecast?: GrowingPlaceForecast,
+): GardenBook {
+  if (!forecast) {
+    return garden;
+  }
+
+  return ensureFrostCareEvent(dismissWaterForRain(garden, forecast), forecast);
+}
+
 export function ensureFrostCareEvent(
   garden: GardenBook,
   forecast?: GrowingPlaceForecast,
@@ -213,8 +229,13 @@ export function ensureFrostCareEvent(
     return garden;
   }
 
+  const hasOpenPlanting = garden.plantings.some((planting) => planting.end === "open");
+  if (!hasOpenPlanting) {
+    return garden;
+  }
+
   const already = garden.careEvents.some(
-    (event) => event.type === "frost" && event.frostOn === night.date,
+    (event) => event.type === "frost" && event.frostNight?.date === night.date,
   );
   if (already) {
     return garden;
@@ -227,31 +248,63 @@ export function ensureFrostCareEvent(
       {
         id: `frost:${night.date}`,
         type: "frost",
-        frostOn: night.date,
+        frostNight: night,
         done: false,
       },
     ],
   };
 }
 
-export function dueCareEvents(
-  garden: GardenBook,
-  forecast?: GrowingPlaceForecast,
-): CareEvent[] {
-  const withForecast = ensureFrostCareEvent(garden, forecast);
+function dismissWaterForRain(garden: GardenBook, forecast: GrowingPlaceForecast): GardenBook {
+  if (!enoughRain(forecast)) {
+    return garden;
+  }
+
+  const openWater = garden.careEvents.filter((event) => event.type === "water" && !event.done);
+  if (openWater.length === 0) {
+    return garden;
+  }
+
+  const existing = new Set(garden.careEvents.map((event) => event.id));
+  const rainCare = openWater.flatMap((water) => {
+    const id = `rain-already-watered:${forecast.today.date}:${water.id}`;
+    if (existing.has(id)) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        type: "rain-already-watered" as const,
+        plantingId: water.plantingId,
+        varietyName: water.varietyName,
+        bedName: water.bedName,
+        done: false,
+      },
+    ];
+  });
+
+  return {
+    ...garden,
+    careEvents: [
+      ...garden.careEvents.map((event) =>
+        event.type === "water" && !event.done ? { ...event, done: true } : event,
+      ),
+      ...rainCare,
+    ],
+  };
+}
+
+export function dueCareEvents(garden: GardenBook): CareEvent[] {
   const failedIds = new Set(
     garden.plantings.filter((planting) => planting.end === "failed").map((planting) => planting.id),
   );
-  const rainDismissesWater = forecast ? enoughRain(forecast) : false;
 
-  return withForecast.careEvents.filter((event) => {
+  return garden.careEvents.filter((event) => {
     if (event.done) {
       return false;
     }
     if (event.type === "water" && event.plantingId && failedIds.has(event.plantingId)) {
-      return false;
-    }
-    if (event.type === "water" && rainDismissesWater) {
       return false;
     }
     return true;
@@ -260,7 +313,13 @@ export function dueCareEvents(
 
 export function careEventLabel(event: CareEvent): string {
   if (event.type === "frost") {
-    return event.frostOn ? `Cover for frost on ${event.frostOn}` : "Cover for frost";
+    return event.frostNight
+      ? `Cover for frost on ${event.frostNight.date}`
+      : "Cover for frost";
+  }
+
+  if (event.type === "rain-already-watered") {
+    return `Rain already watered ${event.varietyName} in ${event.bedName}`;
   }
 
   if (event.type === "set-aside-seeds") {
@@ -272,21 +331,6 @@ export function careEventLabel(event: CareEvent): string {
 
   const verb = event.type === "water" ? "Water" : event.type === "harvest" ? "Harvest" : "Replant";
   return `${verb} ${event.varietyName} in ${event.bedName}`;
-}
-
-export type LockScreenNotice = {
-  id: string;
-  label: string;
-};
-
-export function dueLockScreenNotices(
-  garden: GardenBook,
-  forecast?: GrowingPlaceForecast,
-): LockScreenNotice[] {
-  return dueCareEvents(garden, forecast).map((event) => ({
-    id: event.id,
-    label: careEventLabel(event),
-  }));
 }
 
 function careEventsFor(planting: StartPlanting, plantingId: string): CareEvent[] {

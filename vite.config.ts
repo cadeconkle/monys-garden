@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "lock-screen-sw.js"],
+      includeAssets: ["favicon.svg", "lock-screen-sw.js", "lock-screen-care.js"],
       workbox: {
         importScripts: ["lock-screen-sw.js"],
       },

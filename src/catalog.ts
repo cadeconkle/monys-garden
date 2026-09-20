@@ -28,6 +28,8 @@ export type Variety = {
   fit: Fit;
   why: string;
   kitchenTradition?: KitchenTradition | "none";
+  soil?: string;
+  fertilizer?: string;
 };
 
 export function slugFor(value: string): string {
@@ -125,6 +127,8 @@ export const thinCatalog: Variety[] = [
     fit: "weak",
     why: "Has to come inside before November frost.",
     kitchenTradition: "both",
+    soil: "citrus pot mix",
+    fertilizer: "monthly citrus food in summer",
   },
   {
     name: "Queenette Thai basil",
@@ -157,6 +161,8 @@ export const thinCatalog: Variety[] = [
     fit: "fair",
     why: "Sets fruit here, then stalls in July humidity.",
     kitchenTradition: "American",
+    soil: "loose garden loam",
+    fertilizer: "a light spring feed",
   },
   {
     name: "State Fair zinnia",

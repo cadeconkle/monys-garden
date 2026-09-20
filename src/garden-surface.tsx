@@ -6,10 +6,13 @@ import {
   STARTS,
   currentPlantings,
   currentPlantingsByArea,
+  fertilizerAdviceFor,
+  soilFor,
   type Area,
   type GardenBook,
   type Start,
   type StartPlanting,
+  type Stay,
 } from "./garden";
 
 type GardenSurfaceProps = {
@@ -17,6 +20,8 @@ type GardenSurfaceProps = {
   garden: GardenBook;
   onNameBed: (area: Area, name: string) => void;
   onStartPlanting: (planting: StartPlanting) => string | null;
+  onSetStay: (plantingId: string, stay: Stay) => void;
+  onOverrideSoil: (area: Area, bedName: string, soil: string) => void;
 };
 
 export function GardenSurface({
@@ -24,6 +29,8 @@ export function GardenSurface({
   garden,
   onNameBed,
   onStartPlanting,
+  onSetStay,
+  onOverrideSoil,
 }: GardenSurfaceProps) {
   const plantings = currentPlantings(garden);
 
@@ -38,7 +45,7 @@ export function GardenSurface({
           </p>
         </>
       ) : (
-        <PlantingList garden={garden} />
+        <PlantingList garden={garden} onSetStay={onSetStay} onOverrideSoil={onOverrideSoil} />
       )}
       <NameBedForm onNameBed={onNameBed} />
       <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
@@ -46,28 +53,84 @@ export function GardenSurface({
   );
 }
 
-function PlantingList({ garden }: { garden: GardenBook }) {
+function PlantingList({
+  garden,
+  onSetStay,
+  onOverrideSoil,
+}: {
+  garden: GardenBook;
+  onSetStay: GardenSurfaceProps["onSetStay"];
+  onOverrideSoil: GardenSurfaceProps["onOverrideSoil"];
+}) {
   return (
     <div className="areas">
       {currentPlantingsByArea(garden).map(({ area, beds }) => (
         <section key={area}>
           <h2>{area}</h2>
-          {beds.map((bed) => (
-            <article key={bed.name}>
-              <h3>{bed.name}</h3>
-              {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
-              <ul className="plantings">
-                {bed.plantings.map((planting, index) => (
-                  <li key={`${planting.plantedOn}-${planting.start}-${index}`}>
-                    {`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
+          {beds.map((bed) => {
+            const soil = soilFor(bed, bed.plantings);
+            const fertilizer = fertilizerAdviceFor(bed, bed.plantings);
+
+            return (
+              <article key={bed.name}>
+                <h3>{bed.name}</h3>
+                {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
+                {soil ? <p>Soil: {soil}</p> : null}
+                {fertilizer ? <p>Fertilizer advice: {fertilizer}</p> : null}
+                <ul className="plantings">
+                  {bed.plantings.map((planting) => (
+                    <li key={planting.id}>
+                      <p>{`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}</p>
+                      <p>Stay: {planting.stay}</p>
+                      {planting.stay === "in-bed" ? (
+                        <button type="button" onClick={() => onSetStay(planting.id, "indoors")}>
+                          Bring indoors
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => onSetStay(planting.id, "in-bed")}>
+                          Bring back to the Bed
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <OverrideSoilForm
+                  onOverride={(next) => onOverrideSoil(area, bed.name, next)}
+                />
+              </article>
+            );
+          })}
         </section>
       ))}
     </div>
+  );
+}
+
+function OverrideSoilForm({ onOverride }: { onOverride: (soil: string) => void }) {
+  const [soil, setSoil] = useState("");
+
+  return (
+    <form
+      className="garden-form"
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!soil.trim()) {
+          return;
+        }
+        onOverride(soil);
+        setSoil("");
+      }}
+    >
+      <label>
+        Soil override
+        <input
+          name="soilOverride"
+          value={soil}
+          onChange={(event) => setSoil(event.target.value)}
+        />
+      </label>
+      <button type="submit">Override Soil</button>
+    </form>
   );
 }
 

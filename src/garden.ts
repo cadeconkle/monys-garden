@@ -6,18 +6,24 @@ export type Area = (typeof AREAS)[number];
 export const STARTS = ["seed", "transplant", "tree"] as const;
 export type Start = (typeof STARTS)[number];
 
+export const STAYS = ["in-bed", "indoors"] as const;
+export type Stay = (typeof STAYS)[number];
+
 export type Bed = {
   area: Area;
   name: string;
   plan: Variety | null;
+  soil: string | null;
 };
 
 export type Planting = {
+  id: string;
   area: Area;
   bedName: string;
   variety: Variety;
   plantedOn: string;
   start: Start;
+  stay: Stay;
 };
 
 export type GardenBook = {
@@ -40,7 +46,7 @@ export function nameBed(garden: GardenBook, area: Area, name: string): GardenBoo
 
   return {
     ...garden,
-    beds: [...garden.beds, { area, name: trimmed, plan: null }],
+    beds: [...garden.beds, { area, name: trimmed, plan: null, soil: null }],
   };
 }
 
@@ -85,16 +91,60 @@ export function startPlanting(garden: GardenBook, planting: StartPlanting): Star
       plantings: [
         ...garden.plantings,
         {
+          id: crypto.randomUUID(),
           area: planting.area,
           bedName: planting.bedName,
           variety: planting.variety,
           plantedOn: planting.plantedOn,
           start: planting.start,
+          stay: "in-bed",
         },
       ],
     },
     error: null,
   };
+}
+
+export function setStay(garden: GardenBook, plantingId: string, stay: Stay): GardenBook {
+  return {
+    ...garden,
+    plantings: garden.plantings.map((planting) =>
+      planting.id === plantingId ? { ...planting, stay } : planting,
+    ),
+  };
+}
+
+export function overrideSoil(
+  garden: GardenBook,
+  area: Area,
+  bedName: string,
+  soil: string,
+): GardenBook {
+  const trimmed = soil.trim();
+  if (!trimmed) {
+    return garden;
+  }
+
+  return {
+    ...garden,
+    beds: garden.beds.map((bed) =>
+      bed.area === area && bed.name === bedName ? { ...bed, soil: trimmed } : bed,
+    ),
+  };
+}
+
+export function soilFor(
+  bed: { soil: string | null; plan: Variety | null },
+  plantings: Planting[],
+): string | null {
+  return bed.soil ?? bed.plan?.soil ?? plantings[0]?.variety.soil ?? null;
+}
+
+export function fertilizerAdviceFor(
+  bed: { plan: Variety | null },
+  plantings: Planting[],
+): string | null {
+  return bed.plan?.fertilizer ?? plantings[0]?.variety.fertilizer ?? null;
 }
 
 export function currentPlantings(garden: GardenBook): Planting[] {
@@ -103,7 +153,7 @@ export function currentPlantings(garden: GardenBook): Planting[] {
 
 export function currentPlantingsByArea(garden: GardenBook): {
   area: Area;
-  beds: { name: string; plan: Variety | null; plantings: Planting[] }[];
+  beds: { name: string; plan: Variety | null; soil: string | null; plantings: Planting[] }[];
 }[] {
   return AREAS.flatMap((area) => {
     const here = currentPlantings(garden).filter((item) => item.area === area);
@@ -115,11 +165,15 @@ export function currentPlantingsByArea(garden: GardenBook): {
     return [
       {
         area,
-        beds: names.map((name) => ({
-          name,
-          plan: garden.beds.find((bed) => bed.area === area && bed.name === name)?.plan ?? null,
-          plantings: here.filter((item) => item.bedName === name),
-        })),
+        beds: names.map((name) => {
+          const record = garden.beds.find((bed) => bed.area === area && bed.name === name);
+          return {
+            name,
+            plan: record?.plan ?? null,
+            soil: record?.soil ?? null,
+            plantings: here.filter((item) => item.bedName === name),
+          };
+        }),
       },
     ];
   });

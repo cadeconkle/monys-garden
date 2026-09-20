@@ -4,7 +4,14 @@ import { thinCatalog, type Variety } from "./catalog";
 import { CatalogIndex, CategoryPage, KindPage, VarietyPage } from "./catalog-surface";
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
-import { emptyGarden, nameBed, startPlanting, type GardenBook } from "./garden";
+import {
+  emptyGarden,
+  nameBed,
+  overrideSoil,
+  setStay,
+  startPlanting,
+  type GardenBook,
+} from "./garden";
 import { GardenSurface } from "./garden-surface";
 import { Gate } from "./gate";
 import {
@@ -110,6 +117,12 @@ export function GardenApp({
                 });
                 return plantingError;
               }}
+              onSetStay={(plantingId, stay) =>
+                setGarden((current) => setStay(current, plantingId, stay))
+              }
+              onOverrideSoil={(area, bedName, soil) =>
+                setGarden((current) => overrideSoil(current, area, bedName, soil))
+              }
             />
           }
         />

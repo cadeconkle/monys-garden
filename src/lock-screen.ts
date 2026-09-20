@@ -3,6 +3,7 @@ import type { LockScreenNotice } from "./garden";
 export type { LockScreenNotice };
 
 export type LockScreen = {
+  offer?(): void | Promise<void>;
   sync(notices: readonly LockScreenNotice[]): void | Promise<void>;
 };
 

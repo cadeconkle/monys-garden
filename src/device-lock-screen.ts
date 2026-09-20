@@ -4,43 +4,61 @@ const pageNotices = new Map<string, Notification>();
 
 export function createDeviceLockScreen(): LockScreen {
   let subscription: PushSubscriptionJSON | null = null;
+  let published = false;
 
   return {
+    async offer() {
+      if (!canUseLockScreen()) {
+        return;
+      }
+      if ((await offerLockScreen()) !== "granted") {
+        return;
+      }
+      subscription ??= await subscribeForPush();
+      await registerSubscription(subscription);
+    },
+
     async sync(notices) {
       if (!canUseLockScreen()) {
         return;
       }
 
-      if (notices.length === 0) {
-        await showNotices([]);
-        await publish(notices);
-        return;
-      }
-
-      if ((await offerLockScreen()) !== "granted") {
-        return;
-      }
-
-      subscription ??= await subscribeForPush();
       await showNotices(notices);
-      await publish(notices);
+
+      if (notices.length > 0) {
+        published = true;
+      }
+      if (published) {
+        await publish(notices);
+      }
     },
   };
+}
 
-  async function publish(notices: readonly LockScreenNotice[]) {
-    if (!subscription) {
-      return;
-    }
+async function registerSubscription(subscription: PushSubscriptionJSON | null) {
+  if (!subscription) {
+    return;
+  }
+  try {
+    await fetch("/api/lock-screen", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription }),
+    });
+  } catch {
+    return;
+  }
+}
 
-    try {
-      await fetch("/api/lock-screen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription, notices }),
-      });
-    } catch {
-      return;
-    }
+async function publish(notices: readonly LockScreenNotice[]) {
+  try {
+    await fetch("/api/lock-screen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notices }),
+    });
+  } catch {
+    return;
   }
 }
 
@@ -57,13 +75,17 @@ async function offerLockScreen(): Promise<NotificationPermission> {
 
 async function showNotices(notices: readonly LockScreenNotice[]) {
   const registration = await existingServiceWorker();
+  const due = new Set(notices.map((notice) => notice.id));
+
   if (registration) {
     const shown = await registration.getNotifications();
-    const due = new Set(notices.map((notice) => notice.id));
     for (const current of shown) {
       if (current.tag && !due.has(current.tag)) {
         current.close();
       }
+    }
+    if (Notification.permission !== "granted") {
+      return;
     }
     await Promise.all(
       notices.map((notice) =>
@@ -79,17 +101,23 @@ async function showNotices(notices: readonly LockScreenNotice[]) {
     return;
   }
 
+  closePageNotices(due);
+  if (Notification.permission !== "granted") {
+    return;
+  }
   showOnPage(notices);
 }
 
-function showOnPage(notices: readonly LockScreenNotice[]) {
-  const due = new Set(notices.map((notice) => notice.id));
+function closePageNotices(due: Set<string>) {
   for (const [id, shown] of pageNotices) {
     if (!due.has(id)) {
       shown.close();
       pageNotices.delete(id);
     }
   }
+}
+
+function showOnPage(notices: readonly LockScreenNotice[]) {
   for (const notice of notices) {
     pageNotices.set(
       notice.id,

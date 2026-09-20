@@ -6,3 +6,11 @@ export const household = pgTable("household", {
   gardenerEmail: text("gardener_email").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const lockScreenSubscriptions = pgTable("lock_screen_subscriptions", {
+  endpoint: text().primaryKey(),
+  p256dh: text().notNull(),
+  auth: text().notNull(),
+  gardenerEmail: text("gardener_email").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});

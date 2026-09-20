@@ -85,6 +85,13 @@ export function GardenApp({
     if (!gardener) {
       return;
     }
+    void lockScreen?.offer?.();
+  }, [gardener, lockScreen]);
+
+  useEffect(() => {
+    if (!gardener) {
+      return;
+    }
     void lockScreen?.sync(dueLockScreenNotices(garden));
   }, [gardener, garden, lockScreen]);
 

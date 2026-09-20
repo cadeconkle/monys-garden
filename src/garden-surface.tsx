@@ -40,6 +40,7 @@ export function GardenSurface({
     <main className="surface">
       <h1>Garden</h1>
       <ForecastGlance weather={weather} />
+      <CareList garden={garden} weather={weather} onMarkCareEventDone={onMarkCareEventDone} />
       {plantings.length === 0 ? (
         <>
           <p>Nothing is in the ground yet.</p>
@@ -48,10 +49,7 @@ export function GardenSurface({
           </p>
         </>
       ) : (
-        <>
-          <CareList garden={garden} weather={weather} onMarkCareEventDone={onMarkCareEventDone} />
-          <PlantingList garden={garden} onEndPlantingAsFailed={onEndPlantingAsFailed} />
-        </>
+        <PlantingList garden={garden} onEndPlantingAsFailed={onEndPlantingAsFailed} />
       )}
       <NameBedForm onNameBed={onNameBed} />
       <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />

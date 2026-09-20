@@ -1258,6 +1258,17 @@ test("coming frost creates a frost Care event", async () => {
   expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
 });
 
+test("coming frost creates a frost Care event even when nothing is in the ground", async () => {
+  const garden = openGarden({
+    weather: frostWeek(),
+  });
+
+  await openAsGardener(garden);
+
+  expect(garden.getByText("Nothing is in the ground yet.")).toBeVisible();
+  expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
+});
+
 test("a Variety can show planting-window advice driven by the Growing-place forecast", async () => {
   const garden = openGarden({
     catalog: [
@@ -1280,6 +1291,41 @@ test("a Variety can show planting-window advice driven by the Growing-place fore
 
   expect(await garden.findByRole("heading", { name: "Celebrity tomato" })).toBeVisible();
   expect(garden.getByRole("heading", { name: "Planting-window advice" })).toBeVisible();
+  expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
+});
+
+test("planting-window advice uses the Growing-place frost pair when the week is above freezing", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+    weather: {
+      today: { date: "2026-03-20", highF: 68, lowF: 46, inchesOfRain: 0 },
+      week: [
+        { date: "2026-03-20", highF: 68, lowF: 46, inchesOfRain: 0 },
+        { date: "2026-03-21", highF: 70, lowF: 48, inchesOfRain: 0 },
+        { date: "2026-03-22", highF: 72, lowF: 50, inchesOfRain: 0 },
+        { date: "2026-03-23", highF: 71, lowF: 49, inchesOfRain: 0 },
+        { date: "2026-03-24", highF: 69, lowF: 47, inchesOfRain: 0 },
+        { date: "2026-03-25", highF: 67, lowF: 45, inchesOfRain: 0 },
+        { date: "2026-03-26", highF: 66, lowF: 44, inchesOfRain: 0 },
+      ],
+    },
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
+  await userEvent.click(garden.getByRole("link", { name: "tomato" }));
+  await userEvent.click(garden.getByRole("link", { name: "Celebrity tomato" }));
+
+  expect(await garden.findByRole("heading", { name: "Celebrity tomato" })).toBeVisible();
   expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
 });
 

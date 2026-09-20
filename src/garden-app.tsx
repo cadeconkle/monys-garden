@@ -14,7 +14,7 @@ import { FavoritesPage } from "./favorites-surface";
 import {
   emptyGarden,
   endPlantingAsFailed,
-  gardenWithForecast,
+  ensureFrostCareEvent,
   markCareEventDone,
   nameBed,
   startPlanting,
@@ -33,10 +33,7 @@ import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
 import { curatedShops, type Shop } from "./shops";
 import { ShopsSurface } from "./shops-surface";
-import {
-  fallbackGrowingPlaceForecast,
-  type GrowingPlaceForecast,
-} from "./weather";
+import type { GrowingPlaceForecast } from "./weather";
 
 export function GardenApp({
   household,
@@ -83,7 +80,7 @@ export function GardenApp({
       },
       () => {
         if (!cancelled) {
-          setForecast(fallbackGrowingPlaceForecast());
+          setForecast(undefined);
         }
       },
     );
@@ -173,7 +170,7 @@ export function GardenApp({
               }}
               onMarkCareEventDone={(careEventId) =>
                 setGarden((current) =>
-                  markCareEventDone(gardenWithForecast(current, forecast), careEventId),
+                  markCareEventDone(ensureFrostCareEvent(current, forecast), careEventId),
                 )
               }
               onEndPlantingAsFailed={(plantingId) =>

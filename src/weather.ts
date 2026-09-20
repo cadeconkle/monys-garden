@@ -1,3 +1,5 @@
+import { GROWING_PLACE } from "./growing-place";
+
 export type ForecastDay = {
   date: string;
   highF: number;
@@ -25,22 +27,16 @@ export function plantingWindowAdvice(
   kind: string,
   forecast: GrowingPlaceForecast,
 ): string | null {
-  if (!frostNight(forecast)) {
-    return null;
+  if (frostNight(forecast) || stillInFrostSeason(forecast.today.date)) {
+    return `Don't set ${kind} out until this frost window.`;
   }
 
-  return `Don't set ${kind} out until this frost window.`;
+  return null;
 }
 
-export function fallbackGrowingPlaceForecast(now = new Date()): GrowingPlaceForecast {
-  const week = Array.from({ length: 7 }, (_, index) => ({
-    date: localIsoDate(now, index),
-    highF: 86,
-    lowF: 68,
-    inchesOfRain: 0,
-  }));
-
-  return { today: week[0], week };
+function stillInFrostSeason(isoDate: string): boolean {
+  const monthDay = isoDate.slice(5);
+  return monthDay < GROWING_PLACE.lastSpringFrost || monthDay >= GROWING_PLACE.firstFallFrost;
 }
 
 export async function loadGrowingPlaceForecast(): Promise<GrowingPlaceForecast> {
@@ -75,13 +71,4 @@ export function forecastFromOpenMeteo(payload: OpenMeteoDaily): GrowingPlaceFore
   }));
 
   return { today: week[0], week };
-}
-
-function localIsoDate(now: Date, offsetDays: number): string {
-  const day = new Date(now);
-  day.setDate(day.getDate() + offsetDays);
-  const year = day.getFullYear();
-  const month = String(day.getMonth() + 1).padStart(2, "0");
-  const date = String(day.getDate()).padStart(2, "0");
-  return `${year}-${month}-${date}`;
 }

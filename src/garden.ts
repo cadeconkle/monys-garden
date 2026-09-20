@@ -147,7 +147,7 @@ export function markCareEventDone(garden: GardenBook, careEventId: string): Gard
   };
 }
 
-export function gardenWithForecast(
+export function ensureFrostCareEvent(
   garden: GardenBook,
   forecast?: GrowingPlaceForecast,
 ): GardenBook {
@@ -185,7 +185,7 @@ export function dueCareEvents(
   garden: GardenBook,
   forecast?: GrowingPlaceForecast,
 ): CareEvent[] {
-  const withForecast = gardenWithForecast(garden, forecast);
+  const withForecast = ensureFrostCareEvent(garden, forecast);
   const failedIds = new Set(
     garden.plantings.filter((planting) => planting.end === "failed").map((planting) => planting.id),
   );

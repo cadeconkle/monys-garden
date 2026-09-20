@@ -694,6 +694,13 @@ test("a later season in the same Bed is a new Planting; the old Planting is unch
   expect(garden.getByText("Celebrity tomato · seed · 2026-04-12")).toBeVisible();
   expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
   expect(garden.getByText("Bed plan: Celebrity tomato")).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  expect(await garden.findByRole("heading", { name: "Catalog" })).toBeVisible();
+  await userEvent.click(garden.getByRole("link", { name: "Garden" }));
+  expect(await garden.findByRole("heading", { name: "Garden" })).toBeVisible();
+  expect(garden.getByText("Celebrity tomato · seed · 2026-04-12")).toBeVisible();
+  expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
 });
 
 test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created as an Area", async () => {

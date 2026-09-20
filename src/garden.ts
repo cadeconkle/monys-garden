@@ -65,7 +65,12 @@ export function startPlanting(garden: GardenBook, planting: StartPlanting): Star
     return { garden, error: "Name a Bed first." };
   }
 
-  if (bed.plan && bed.plan.name !== planting.variety.name) {
+  const varietyInBed =
+    bed.plan?.name ??
+    garden.plantings.find((item) => item.area === planting.area && item.bedName === planting.bedName)
+      ?.variety.name;
+
+  if (varietyInBed && varietyInBed !== planting.variety.name) {
     return {
       garden,
       error: `A Bed holds one Variety. Name a neighboring Bed for ${planting.variety.name}.`,

@@ -14,46 +14,59 @@ import {
 } from "./catalog";
 
 export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
-  const categories = categoriesIn(catalog);
+  const [search] = useSearchParams();
+  const visible = visibleVarieties(catalog, hiddenFits(search));
+  const categories = categoriesIn(visible);
 
   return (
     <main className="surface">
       <h1>Catalog</h1>
-      {categories.length === 0 ? (
+      <p>Browse by Category, then Kind, then Variety. Weak Fit stays listed.</p>
+      <FitFilter />
+      {catalog.length === 0 ? (
         <p>No Varieties yet. Every Variety that can live at this Growing place will land here.</p>
+      ) : categories.length === 0 ? (
+        <p>No Varieties match this Fit. They are still in the Catalog.</p>
       ) : (
-        <>
-          <p>Browse by Category, then Kind, then Variety. Weak Fit stays listed.</p>
-          <ul className="rungs">
-            {categories.map((category) => (
-              <li key={category}>
-                <Link to={`/catalog/${slugFor(category)}`}>{category}</Link>
-              </li>
-            ))}
-          </ul>
-        </>
+        <ul className="rungs">
+          {categories.map((category) => (
+            <li key={category}>
+              <CatalogLink path={`/catalog/${slugFor(category)}`}>{category}</CatalogLink>
+            </li>
+          ))}
+        </ul>
       )}
     </main>
   );
 }
 
 export function CategoryPage({ catalog }: { catalog: readonly Variety[] }) {
-  const category = categoryFromSlug(useParams().categorySlug ?? "");
+  const params = useParams();
+  const [search] = useSearchParams();
+  const visible = visibleVarieties(catalog, hiddenFits(search));
+  const category = categoryFromSlug(params.categorySlug ?? "");
   if (!category) {
     return <Missing rung="Category" />;
   }
+
+  const kinds = kindsIn(visible, category);
 
   return (
     <main className="surface">
       <Trail category={category} />
       <h1>{category}</h1>
-      <ul className="rungs">
-        {kindsIn(catalog, category).map((kind) => (
-          <li key={kind}>
-            <Link to={`/catalog/${slugFor(category)}/${slugFor(kind)}`}>{kind}</Link>
-          </li>
-        ))}
-      </ul>
+      <FitFilter />
+      {kinds.length === 0 ? (
+        <p>No Varieties match this Fit. They are still in the Catalog.</p>
+      ) : (
+        <ul className="rungs">
+          {kinds.map((kind) => (
+            <li key={kind}>
+              <CatalogLink path={`/catalog/${slugFor(category)}/${slugFor(kind)}`}>{kind}</CatalogLink>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   );
 }
@@ -61,9 +74,10 @@ export function CategoryPage({ catalog }: { catalog: readonly Variety[] }) {
 export function KindPage({ catalog }: { catalog: readonly Variety[] }) {
   const params = useParams();
   const [search] = useSearchParams();
+  const visible = visibleVarieties(catalog, hiddenFits(search));
   const category = categoryFromSlug(params.categorySlug ?? "");
   if (!category) {
-    return <Missing rung="Kind" />;
+    return <Missing rung="Category" />;
   }
 
   const kind = kindFromSlug(catalog, category, params.kindSlug ?? "");
@@ -71,10 +85,7 @@ export function KindPage({ catalog }: { catalog: readonly Variety[] }) {
     return <Missing rung="Kind" />;
   }
 
-  const hidden = hiddenFits(search);
-  const listed = varietiesOf(catalog, category, kind).filter(
-    (variety) => !hidden.includes(variety.fit),
-  );
+  const listed = varietiesOf(visible, category, kind);
 
   return (
     <main className="surface">
@@ -87,11 +98,12 @@ export function KindPage({ catalog }: { catalog: readonly Variety[] }) {
         <ul className="rungs">
           {listed.map((variety) => (
             <li key={variety.name}>
-              <Link to={`/catalog/${slugFor(category)}/${slugFor(kind)}/${slugFor(variety.name)}`}>
+              <CatalogLink
+                path={`/catalog/${slugFor(category)}/${slugFor(kind)}/${slugFor(variety.name)}`}
+              >
                 {variety.name}
-              </Link>
-              <p className="fit">{variety.fit} Fit</p>
-              <p>{variety.why}</p>
+              </CatalogLink>
+              <VarietyFacts variety={variety} />
             </li>
           ))}
         </ul>
@@ -104,7 +116,7 @@ export function VarietyPage({ catalog }: { catalog: readonly Variety[] }) {
   const params = useParams();
   const category = categoryFromSlug(params.categorySlug ?? "");
   if (!category) {
-    return <Missing rung="Variety" />;
+    return <Missing rung="Category" />;
   }
 
   const kind = kindFromSlug(catalog, category, params.kindSlug ?? "");
@@ -112,7 +124,10 @@ export function VarietyPage({ catalog }: { catalog: readonly Variety[] }) {
     ? findVariety(catalog, category, kind, params.varietySlug ?? "")
     : undefined;
 
-  if (!kind || !variety) {
+  if (!kind) {
+    return <Missing rung="Kind" />;
+  }
+  if (!variety) {
     return <Missing rung="Variety" />;
   }
 
@@ -120,27 +135,41 @@ export function VarietyPage({ catalog }: { catalog: readonly Variety[] }) {
     <main className="surface">
       <Trail category={category} kind={kind} />
       <h1>{variety.name}</h1>
-      <p>This is a {variety.fit} Fit.</p>
-      <p>{variety.why}</p>
+      <VarietyFacts variety={variety} sentence />
       <p>This Variety is still thin. Fit and why are here; photoreal art and full care are not.</p>
     </main>
   );
 }
 
-function Trail({ category, kind }: { category?: Category; kind?: string }) {
-  const [params] = useSearchParams();
-  const query = params.toString();
-  const search = query ? `?${query}` : "";
+function VarietyFacts({ variety, sentence }: { variety: Variety; sentence?: boolean }) {
+  return (
+    <>
+      <p>{variety.category}</p>
+      <p>{variety.kind}</p>
+      <p className="fit">{sentence ? `This is a ${variety.fit} Fit.` : `${variety.fit} Fit`}</p>
+      <p>{variety.why}</p>
+    </>
+  );
+}
 
+function Trail({ category, kind }: { category?: Category; kind?: string }) {
   return (
     <nav className="trail" aria-label="Catalog trail">
-      <Link to="/catalog">Catalog</Link>
-      {category ? <Link to={`/catalog/${slugFor(category)}`}>{category}</Link> : null}
+      <CatalogLink path="/catalog">Catalog</CatalogLink>
+      {category ? (
+        <CatalogLink path={`/catalog/${slugFor(category)}`}>{category}</CatalogLink>
+      ) : null}
       {category && kind ? (
-        <Link to={`/catalog/${slugFor(category)}/${slugFor(kind)}${search}`}>{kind}</Link>
+        <CatalogLink path={`/catalog/${slugFor(category)}/${slugFor(kind)}`}>{kind}</CatalogLink>
       ) : null}
     </nav>
   );
+}
+
+function CatalogLink({ path, children }: { path: string; children: string }) {
+  const [params] = useSearchParams();
+  const query = params.toString();
+  return <Link to={query ? `${path}?${query}` : path}>{children}</Link>;
 }
 
 function FitFilter() {
@@ -172,6 +201,10 @@ function FitFilter() {
       ))}
     </fieldset>
   );
+}
+
+function visibleVarieties(catalog: readonly Variety[], hidden: Fit[]): Variety[] {
+  return catalog.filter((variety) => !hidden.includes(variety.fit));
 }
 
 function hiddenFits(params: URLSearchParams): Fit[] {

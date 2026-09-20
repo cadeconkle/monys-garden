@@ -4,17 +4,18 @@ import { thinCatalog, type Variety } from "./catalog";
 import { CatalogIndex, CategoryPage, KindPage, VarietyPage } from "./catalog-surface";
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
+import { emptyGarden, nameBed, startPlanting, type GardenBook } from "./garden";
+import { GardenSurface } from "./garden-surface";
 import { Gate } from "./gate";
-import { createLists } from "./lists";
-import { ListPage, ListsPage } from "./lists-surface";
 import {
   HouseholdAlreadyHasAGardenerError,
   WrongGardenerError,
   type Gardener,
   type Household,
 } from "./household";
+import { createLists } from "./lists";
+import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
-import { GardenSurface } from "./surfaces";
 
 export function GardenApp({
   household,
@@ -30,6 +31,7 @@ export function GardenApp({
   const [favorites] = useState(createFavorites);
   const [lists] = useState(createLists);
   const [, setRevision] = useState(0);
+  const [garden, setGarden] = useState<GardenBook>(emptyGarden);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +94,25 @@ export function GardenApp({
   return (
     <Shell growingPlace={household.growingPlace.name} gardener={gardener}>
       <Routes>
-        <Route path="/" element={<GardenSurface />} />
+        <Route
+          path="/"
+          element={
+            <GardenSurface
+              catalog={catalog}
+              garden={garden}
+              onNameBed={(area, name) => setGarden((current) => nameBed(current, area, name))}
+              onStartPlanting={(planting) => {
+                let plantingError: string | null = null;
+                setGarden((current) => {
+                  const result = startPlanting(current, planting);
+                  plantingError = result.error;
+                  return result.garden;
+                });
+                return plantingError;
+              }}
+            />
+          }
+        />
         <Route path="/catalog" element={<CatalogIndex catalog={catalog} />} />
         <Route path="/catalog/:categorySlug" element={<CategoryPage catalog={catalog} />} />
         <Route

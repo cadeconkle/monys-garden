@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
+import { thinCatalog, type Variety } from "./catalog";
+import { CatalogIndex, CategoryPage, KindPage, VarietyPage } from "./catalog-surface";
 import { Gate } from "./gate";
 import {
   HouseholdAlreadyHasAGardenerError,
@@ -8,9 +10,15 @@ import {
   type Household,
 } from "./household";
 import { Shell } from "./shell";
-import { CatalogSurface, GardenSurface } from "./surfaces";
+import { GardenSurface } from "./surfaces";
 
-export function GardenApp({ household }: { household: Household }) {
+export function GardenApp({
+  household,
+  catalog = thinCatalog,
+}: {
+  household: Household;
+  catalog?: readonly Variety[];
+}) {
   const [ready, setReady] = useState(false);
   const [gardener, setGardener] = useState<Gardener | null>(null);
   const [gardenerExists, setGardenerExists] = useState(false);
@@ -78,7 +86,16 @@ export function GardenApp({ household }: { household: Household }) {
     <Shell growingPlace={household.growingPlace.name} gardener={gardener}>
       <Routes>
         <Route path="/" element={<GardenSurface />} />
-        <Route path="/catalog" element={<CatalogSurface />} />
+        <Route path="/catalog" element={<CatalogIndex catalog={catalog} />} />
+        <Route path="/catalog/:categorySlug" element={<CategoryPage catalog={catalog} />} />
+        <Route
+          path="/catalog/:categorySlug/:kindSlug"
+          element={<KindPage catalog={catalog} />}
+        />
+        <Route
+          path="/catalog/:categorySlug/:kindSlug/:varietySlug"
+          element={<VarietyPage catalog={catalog} />}
+        />
       </Routes>
     </Shell>
   );

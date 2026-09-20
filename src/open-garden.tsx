@@ -1,10 +1,14 @@
 import { render, type RenderResult } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import type { Variety } from "./catalog";
 import { GardenApp } from "./garden-app";
 import { createHousehold, type Household } from "./household";
 
-export function openGarden(options?: { household?: Household }): RenderResult & {
+export function openGarden(options?: {
+  household?: Household;
+  catalog?: readonly Variety[];
+}): RenderResult & {
   household: Household;
 } {
   const household = options?.household ?? createHousehold();
@@ -12,7 +16,7 @@ export function openGarden(options?: { household?: Household }): RenderResult & 
   document.body.append(host);
   const view = render(
     <MemoryRouter>
-      <GardenApp household={household} />
+      <GardenApp household={household} catalog={options?.catalog} />
     </MemoryRouter>,
     { container: host, baseElement: host },
   );

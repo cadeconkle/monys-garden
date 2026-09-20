@@ -1422,6 +1422,108 @@ test("a Variety can show a Buy place", async () => {
   expect(garden.getByRole("heading", { name: "H Mart" })).toBeVisible();
 });
 
+test("setting Stay to indoors does not change Area, and the Gardener can bring the Planting back to its Bed", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Lemon pot");
+  await startThePlanting(garden, {
+    variety: "Improved Meyer lemon",
+    bed: "Patio · Lemon pot",
+    plantedOn: "2025-04-12",
+    start: "tree",
+  });
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Lemon pot" })).toBeVisible();
+  expect(garden.getByText("Improved Meyer lemon · tree · 2025-04-12")).toBeVisible();
+  expect(garden.getByText("Stay: in-bed")).toBeVisible();
+  expect(garden.queryByRole("heading", { name: /kitchen/i })).toBeNull();
+
+  await userEvent.click(garden.getByRole("button", { name: "Bring indoors" }));
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByText("Stay: indoors")).toBeVisible();
+  expect(garden.queryByText("Stay: in-bed")).toBeNull();
+  expect(garden.queryByRole("heading", { name: /kitchen/i })).toBeNull();
+  expect(garden.queryByRole("heading", { name: /indoors/i })).toBeNull();
+  expect(garden.getByText("Improved Meyer lemon · tree · 2025-04-12")).toBeVisible();
+
+  await userEvent.click(garden.getByRole("button", { name: "Bring back to the Bed" }));
+
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getByText("Stay: in-bed")).toBeVisible();
+  expect(garden.queryByText("Stay: indoors")).toBeNull();
+});
+
+test("a Bed can override Soil; the Variety default remains when there is no override", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Improved Meyer lemon",
+        category: "fruit trees",
+        kind: "lemon",
+        fit: "weak",
+        why: "Has to come inside before November frost.",
+        soil: "citrus pot mix",
+        fertilizer: "monthly citrus food in summer",
+      },
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+        soil: "loose garden loam",
+        fertilizer: "a light spring feed",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Lemon pot");
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Improved Meyer lemon",
+    bed: "Patio · Lemon pot",
+    plantedOn: "2025-04-12",
+    start: "tree",
+  });
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Soil: citrus pot mix")).toBeVisible();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
+  expect(garden.queryByText(/fertilizer is due/i)).toBeNull();
+  expect(garden.queryByRole("button", { name: /fertilizer/i })).toBeNull();
+  expect(
+    within(garden.getByRole("list", { name: "Care events" })).queryByText(/fertilizer/i),
+  ).toBeNull();
+
+  await userEvent.type(garden.getByLabelText("Soil override for Lemon pot"), "amended clay");
+  await userEvent.click(garden.getByRole("button", { name: "Override Soil for Lemon pot" }));
+
+  expect(garden.getByText("Soil: amended clay")).toBeVisible();
+  expect(garden.queryByText("citrus pot mix")).toBeNull();
+  expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
+  expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
+});
+
 async function nameTheBed(garden: RenderResult, area: string, name: string) {
   await userEvent.selectOptions(garden.getByLabelText("Area"), area);
   const bedName = garden.getByLabelText("Bed name");

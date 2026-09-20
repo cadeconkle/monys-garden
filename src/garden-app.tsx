@@ -17,6 +17,8 @@ import {
   endPlantingAsFailed,
   markCareEventDone,
   nameBed,
+  overrideSoil,
+  setStay,
   startPlanting,
   type GardenBook,
 } from "./garden";
@@ -149,6 +151,12 @@ export function GardenApp({
                 });
                 return plantingError;
               }}
+              onSetStay={(plantingId, stay) =>
+                setGarden((current) => setStay(current, plantingId, stay))
+              }
+              onOverrideSoil={(area, bedName, soil) =>
+                setGarden((current) => overrideSoil(current, area, bedName, soil))
+              }
               onMarkCareEventDone={(careEventId) =>
                 setGarden((current) => markCareEventDone(current, careEventId))
               }

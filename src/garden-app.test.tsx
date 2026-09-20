@@ -1,3 +1,4 @@
+import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createHousehold } from "./household";
 import { openAsGardener, openGarden } from "./open-garden";
@@ -170,6 +171,320 @@ test("a thin Variety shows Fit and why and does not invent photoreal art or full
   expect(garden.queryByText(/harvest/i)).toBeNull();
   expect(garden.queryByText(/technique/i)).toBeNull();
   expect(garden.queryByText(/buy place/i)).toBeNull();
+});
+
+test("a Favorite is not a List", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  await userEvent.click(garden.getByRole("button", { name: "Heart as a Favorite" }));
+
+  await userEvent.click(garden.getByRole("link", { name: "Favorites" }));
+  expect(await garden.findByRole("link", { name: "Queenette Thai basil" })).toBeVisible();
+  expect(garden.getByText(/Not a List/)).toBeVisible();
+
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(garden.getByRole("link", { name: "Lists" }));
+  expect(await garden.findByRole("heading", { name: "Lists" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "Favorites" })).toBeNull();
+  expect(garden.getByText(/not a Favorite/i)).toBeVisible();
+
+  await userEvent.type(garden.getByLabelText("List name"), "Front shrubs");
+  await userEvent.click(garden.getByRole("button", { name: "Create List" }));
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(garden.getByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  await userEvent.click(garden.getByRole("button", { name: "Add to Front shrubs" }));
+  await userEvent.click(garden.getByRole("button", { name: "Unheart this Favorite" }));
+
+  await userEvent.click(garden.getByRole("link", { name: "Favorites" }));
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(garden.getByRole("link", { name: "Lists" }));
+  await userEvent.click(garden.getByRole("link", { name: "Front shrubs" }));
+  expect(garden.getByRole("link", { name: "Queenette Thai basil" })).toBeVisible();
+});
+
+test("the Gardener can create a named List, add and remove Varieties, and open the List to each Variety", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+      {
+        name: "Formosa azalea",
+        category: "shrubs",
+        kind: "azalea",
+        fit: "strong",
+        why: "A common Fuquay-Varina front yard shrub.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "Lists" }));
+  expect(await garden.findByRole("heading", { name: "Lists" })).toBeVisible();
+
+  await userEvent.type(garden.getByLabelText("List name"), "spring seeds");
+  await userEvent.click(garden.getByRole("button", { name: "Create List" }));
+  expect(garden.getByRole("link", { name: "spring seeds" })).toBeVisible();
+
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  await userEvent.click(garden.getByRole("button", { name: "Add to spring seeds" }));
+
+  await userEvent.click(garden.getByRole("link", { name: "Lists" }));
+  await userEvent.click(garden.getByRole("link", { name: "spring seeds" }));
+  expect(await garden.findByRole("heading", { name: "spring seeds" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "Queenette Thai basil" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Formosa azalea" })).toBeNull();
+
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  expect(await garden.findByRole("heading", { name: "Queenette Thai basil" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "Lists" }));
+  await userEvent.click(garden.getByRole("link", { name: "spring seeds" }));
+  await userEvent.click(garden.getByRole("button", { name: "Remove Queenette Thai basil" }));
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+});
+
+test("the Gardener can heart and unheart a Variety as a Favorite", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "Favorites" }));
+  expect(await garden.findByRole("heading", { name: "Favorites" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(await garden.findByRole("link", { name: "herbs" }));
+  await userEvent.click(garden.getByRole("link", { name: "Thai basil" }));
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  await userEvent.click(garden.getByRole("button", { name: "Heart as a Favorite" }));
+
+  expect(garden.getByText("This is a Favorite.")).toBeVisible();
+  expect(garden.getByRole("button", { name: "Unheart this Favorite" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "Favorites" }));
+  expect(await garden.findByRole("link", { name: "Queenette Thai basil" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "Queenette Thai basil" }));
+  await userEvent.click(garden.getByRole("button", { name: "Unheart this Favorite" }));
+  expect(garden.getByRole("button", { name: "Heart as a Favorite" })).toBeVisible();
+  expect(garden.queryByText("This is a Favorite.")).toBeNull();
+
+  await userEvent.click(garden.getByRole("link", { name: "Favorites" }));
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+});
+
+test("the Gardener can filter by Kitchen tradition and by Ornamental", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+        kitchenTradition: "Asian",
+      },
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+        kitchenTradition: "American",
+      },
+      {
+        name: "Santo cilantro",
+        category: "herbs",
+        kind: "cilantro",
+        fit: "fair",
+        why: "Only happy in the short cool window before June.",
+        kitchenTradition: "both",
+      },
+      {
+        name: "Formosa azalea",
+        category: "shrubs",
+        kind: "azalea",
+        fit: "strong",
+        why: "A common Fuquay-Varina front yard shrub.",
+        kitchenTradition: "none",
+      },
+      {
+        name: "Yuletide camellia",
+        category: "shrubs",
+        kind: "camellia",
+        fit: "strong",
+        why: "Winter blooms after our first frost.",
+        kitchenTradition: "none",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+
+  expect(await garden.findByRole("link", { name: "herbs" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "vegetables" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "shrubs" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("checkbox", { name: "American" }));
+  await userEvent.click(garden.getByRole("checkbox", { name: "both" }));
+  await userEvent.click(garden.getByRole("checkbox", { name: "Ornamental" }));
+
+  expect(garden.getByRole("link", { name: "herbs" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "vegetables" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "shrubs" })).toBeNull();
+
+  await userEvent.click(garden.getByRole("link", { name: "herbs" }));
+  expect(garden.getByRole("link", { name: "Thai basil" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "cilantro" })).toBeNull();
+
+  await userEvent.click(
+    within(garden.getByRole("navigation", { name: "Catalog trail" })).getByRole("link", {
+      name: "Catalog",
+    }),
+  );
+  await userEvent.click(garden.getByRole("checkbox", { name: "Asian" }));
+  await userEvent.click(garden.getByRole("checkbox", { name: "Ornamental" }));
+
+  expect(garden.queryByRole("link", { name: "herbs" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "vegetables" })).toBeNull();
+  expect(garden.getByRole("link", { name: "shrubs" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "shrubs" }));
+  expect(garden.getByRole("link", { name: "azalea" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "camellia" })).toBeVisible();
+
+  await userEvent.click(garden.getByRole("link", { name: "azalea" }));
+  await userEvent.click(garden.getByRole("link", { name: "Formosa azalea" }));
+  expect(await garden.findByRole("heading", { name: "Formosa azalea" })).toBeVisible();
+  expect(garden.getByText(/Ornamental/)).toBeVisible();
+  expect(garden.queryByText(/Asian kitchen/i)).toBeNull();
+});
+
+test("Suggestions are only stronger-Fit Varieties of the same Kind", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Elberta peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "weak",
+        why: "Blooms too early for an April frost here.",
+      },
+      {
+        name: "Redhaven peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "fair",
+        why: "Sets some fruit after a cautious April plant.",
+      },
+      {
+        name: "Contender peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "strong",
+        why: "Sets fruit after our late frost.",
+      },
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await userEvent.click(garden.getByRole("link", { name: "Catalog" }));
+  await userEvent.click(await garden.findByRole("link", { name: "fruit trees" }));
+  await userEvent.click(garden.getByRole("link", { name: "peach" }));
+  await userEvent.click(garden.getByRole("link", { name: "Elberta peach" }));
+
+  expect(await garden.findByRole("heading", { name: "Suggestions" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "Redhaven peach" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "Contender peach" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "Celebrity tomato" })).toBeNull();
+  expect(garden.queryByText(/companion/i)).toBeNull();
+
+  await userEvent.click(garden.getByRole("link", { name: "Redhaven peach" }));
+  expect(await garden.findByRole("heading", { name: "Redhaven peach" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "Contender peach" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Elberta peach" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+
+  await userEvent.click(garden.getByRole("link", { name: "Contender peach" }));
+  expect(await garden.findByRole("heading", { name: "Contender peach" })).toBeVisible();
+  expect(garden.queryByRole("heading", { name: "Suggestions" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "Elberta peach" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "Redhaven peach" })).toBeNull();
 });
 
 test("Catalog categories include vines and keep bushes inside shrubs", async () => {

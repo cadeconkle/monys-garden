@@ -13,12 +13,23 @@ export type Category = (typeof CATEGORIES)[number];
 export const FITS = ["strong", "fair", "weak"] as const;
 export type Fit = (typeof FITS)[number];
 
+const FIT_STRENGTH: Record<Fit, number> = {
+  weak: 0,
+  fair: 1,
+  strong: 2,
+};
+
+export const KITCHEN_TRADITIONS = ["Asian", "American", "both"] as const;
+export type KitchenTradition = (typeof KITCHEN_TRADITIONS)[number];
+export type KitchenUse = KitchenTradition | "none";
+
 export type Variety = {
   name: string;
   category: Category;
   kind: string;
   fit: Fit;
   why: string;
+  kitchenTradition?: KitchenUse;
 };
 
 export function slugFor(value: string): string {
@@ -71,6 +82,19 @@ export function findVariety(
   return varietiesOf(catalog, category, kind).find((variety) => slugFor(variety.name) === nameSlug);
 }
 
+export function varietyPath(variety: Variety): string {
+  return `/catalog/${slugFor(variety.category)}/${slugFor(variety.kind)}/${slugFor(variety.name)}`;
+}
+
+export function suggestionsFor(catalog: readonly Variety[], variety: Variety): Variety[] {
+  return catalog.filter(
+    (candidate) =>
+      candidate.kind === variety.kind &&
+      candidate.name !== variety.name &&
+      FIT_STRENGTH[candidate.fit] > FIT_STRENGTH[variety.fit],
+  );
+}
+
 export const thinCatalog: Variety[] = [
   {
     name: "Contender peach",
@@ -78,6 +102,7 @@ export const thinCatalog: Variety[] = [
     kind: "peach",
     fit: "strong",
     why: "Sets fruit after our late frost.",
+    kitchenTradition: "American",
   },
   {
     name: "Elberta peach",
@@ -85,6 +110,7 @@ export const thinCatalog: Variety[] = [
     kind: "peach",
     fit: "weak",
     why: "Blooms too early for an April frost here.",
+    kitchenTradition: "American",
   },
   {
     name: "Celeste fig",
@@ -92,6 +118,7 @@ export const thinCatalog: Variety[] = [
     kind: "fig",
     fit: "strong",
     why: "Likes our long, hot summers.",
+    kitchenTradition: "American",
   },
   {
     name: "Improved Meyer lemon",
@@ -99,6 +126,7 @@ export const thinCatalog: Variety[] = [
     kind: "lemon",
     fit: "weak",
     why: "Has to come inside before November frost.",
+    kitchenTradition: "both",
   },
   {
     name: "Queenette Thai basil",
@@ -106,6 +134,7 @@ export const thinCatalog: Variety[] = [
     kind: "Thai basil",
     fit: "strong",
     why: "Thrives in humid heat.",
+    kitchenTradition: "Asian",
   },
   {
     name: "Santo cilantro",
@@ -113,6 +142,7 @@ export const thinCatalog: Variety[] = [
     kind: "cilantro",
     fit: "fair",
     why: "Only happy in the short cool window before June.",
+    kitchenTradition: "both",
   },
   {
     name: "Clemson Spineless okra",
@@ -120,6 +150,7 @@ export const thinCatalog: Variety[] = [
     kind: "okra",
     fit: "strong",
     why: "Built for nights that stay over 86°F.",
+    kitchenTradition: "both",
   },
   {
     name: "Celebrity tomato",
@@ -127,6 +158,7 @@ export const thinCatalog: Variety[] = [
     kind: "tomato",
     fit: "fair",
     why: "Sets fruit here, then stalls in July humidity.",
+    kitchenTradition: "American",
   },
   {
     name: "State Fair zinnia",
@@ -134,6 +166,7 @@ export const thinCatalog: Variety[] = [
     kind: "zinnia",
     fit: "strong",
     why: "Takes our summer sun without sulking.",
+    kitchenTradition: "none",
   },
   {
     name: "Formosa azalea",
@@ -141,6 +174,7 @@ export const thinCatalog: Variety[] = [
     kind: "azalea",
     fit: "strong",
     why: "A common Fuquay-Varina front yard shrub.",
+    kitchenTradition: "none",
   },
   {
     name: "Yuletide camellia",
@@ -148,6 +182,7 @@ export const thinCatalog: Variety[] = [
     kind: "camellia",
     fit: "strong",
     why: "Winter blooms after our first frost.",
+    kitchenTradition: "none",
   },
   {
     name: "Natchez crape myrtle",
@@ -155,6 +190,7 @@ export const thinCatalog: Variety[] = [
     kind: "crape myrtle",
     fit: "strong",
     why: "A street tree that loves this heat.",
+    kitchenTradition: "none",
   },
   {
     name: "bitter melon",
@@ -162,6 +198,7 @@ export const thinCatalog: Variety[] = [
     kind: "bitter melon",
     fit: "fair",
     why: "Grows on a trellis in our summer if nights stay hot.",
+    kitchenTradition: "Asian",
   },
   {
     name: "Carlos muscadine",
@@ -169,5 +206,6 @@ export const thinCatalog: Variety[] = [
     kind: "muscadine",
     fit: "strong",
     why: "A grape that belongs in the Carolina piedmont.",
+    kitchenTradition: "American",
   },
 ];

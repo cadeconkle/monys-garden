@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { thinCatalog, type Variety } from "./catalog";
 import { CatalogIndex, CategoryPage, KindPage, VarietyPage } from "./catalog-surface";
+import { createFavorites } from "./favorites";
+import { FavoritesPage } from "./favorites-surface";
 import { Gate } from "./gate";
+import { createLists } from "./lists";
+import { ListPage, ListsPage } from "./lists-surface";
 import {
   HouseholdAlreadyHasAGardenerError,
   WrongGardenerError,
@@ -23,6 +27,9 @@ export function GardenApp({
   const [gardener, setGardener] = useState<Gardener | null>(null);
   const [gardenerExists, setGardenerExists] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [favorites] = useState(createFavorites);
+  const [lists] = useState(createLists);
+  const [, setSaved] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +101,33 @@ export function GardenApp({
         />
         <Route
           path="/catalog/:categorySlug/:kindSlug/:varietySlug"
-          element={<VarietyPage catalog={catalog} />}
+          element={
+            <VarietyPage
+              catalog={catalog}
+              favorites={favorites}
+              onFavoritesChange={() => setSaved((n) => n + 1)}
+              lists={lists}
+              onListsChange={() => setSaved((n) => n + 1)}
+            />
+          }
+        />
+        <Route
+          path="/favorites"
+          element={<FavoritesPage catalog={catalog} favorites={favorites} />}
+        />
+        <Route
+          path="/lists"
+          element={<ListsPage lists={lists} onListsChange={() => setSaved((n) => n + 1)} />}
+        />
+        <Route
+          path="/lists/:listSlug"
+          element={
+            <ListPage
+              catalog={catalog}
+              lists={lists}
+              onListsChange={() => setSaved((n) => n + 1)}
+            />
+          }
         />
       </Routes>
     </Shell>

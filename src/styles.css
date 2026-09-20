@@ -205,6 +205,64 @@ button:disabled {
   color: var(--quiet);
 }
 
+.kept {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0 0 1.1rem;
+}
+
+.heart {
+  margin: 0 0 1rem;
+}
+
+.heart p {
+  margin: 0 0 0.45rem;
+}
+
+.heart button,
+.list-form button,
+.list-membership button,
+.rungs button {
+  margin-top: 0;
+}
+
+.list-form {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0 0 1.2rem;
+}
+
+.list-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--quiet);
+}
+
+.list-form input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0.45rem 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.list-membership {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+}
+
+.suggestions h2 {
+  margin: 1.6rem 0 0.4rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 .fit-filter {
   margin: 0 0 1.2rem;
   border: 0;

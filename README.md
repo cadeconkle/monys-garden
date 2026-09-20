@@ -1,25 +1,23 @@
 # Mony's Garden
 
-A quiet place to grow something.
+A private companion app for the household garden in Fuquay-Varina, North Carolina. One Gardener. Two surfaces: Catalog and Garden.
 
-This repository is the home for **Mony's Garden** — notes, plant lists, seasonal plans, and whatever else belongs in the garden as it takes shape.
+Domain language lives in `CONTEXT.md`. Decisions live in `docs/adr/`.
 
-## What's here
-
-Right now this is a fresh plot. The first commit is this README. Use the repo to keep:
-
-- Plant names and when they went in the ground
-- Watering and care notes
-- Seasonal planting plans
-- Photos and sketches as they arrive
-
-## Clone
+## Run
 
 ```bash
-git clone https://github.com/cadeconkle/monys-garden.git
-cd monys-garden
+npm install
+npm test
+npm run dev
 ```
 
-## Contribute
+The local app uses an in-memory household so you can open the garden without Netlify Identity. Production uses `@netlify/identity` and Netlify Database so phone and iPad share the same Gardener.
 
-This is a personal garden project. If you're helping tend it, keep notes clear, date your changes, and leave the beds a little better than you found them.
+## Deploy
+
+The site is a Vite + React app on Netlify. After the first production deploy:
+
+1. Enable Identity in Project configuration
+2. Turn on autoconfirm so the first opening does not wait on email
+3. Leave registration open — the app still refuses a second Gardener

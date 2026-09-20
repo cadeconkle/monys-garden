@@ -16,10 +16,12 @@ import {
   type StartPlanting,
   type Stay,
 } from "./garden";
+import { enoughRain, frostNight, type ForecastDay, type GrowingPlaceForecast } from "./weather";
 
 type GardenSurfaceProps = {
   catalog: readonly Variety[];
   garden: GardenBook;
+  weather?: GrowingPlaceForecast;
   onNameBed: (area: Area, name: string) => void;
   onStartPlanting: (planting: StartPlanting) => string | null;
   onSetStay: (plantingId: string, stay: Stay) => void;
@@ -31,6 +33,7 @@ type GardenSurfaceProps = {
 export function GardenSurface({
   catalog,
   garden,
+  weather,
   onNameBed,
   onStartPlanting,
   onSetStay,
@@ -43,6 +46,8 @@ export function GardenSurface({
   return (
     <main className="surface">
       <h1>Garden</h1>
+      <ForecastGlance weather={weather} />
+      <CareList garden={garden} weather={weather} onMarkCareEventDone={onMarkCareEventDone} />
       {plantings.length === 0 ? (
         <>
           <p>Nothing is in the ground yet.</p>
@@ -51,15 +56,12 @@ export function GardenSurface({
           </p>
         </>
       ) : (
-        <>
-          <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
-          <PlantingList
-            garden={garden}
-            onSetStay={onSetStay}
-            onOverrideSoil={onOverrideSoil}
-            onEndPlantingAsFailed={onEndPlantingAsFailed}
-          />
-        </>
+        <PlantingList
+          garden={garden}
+          onSetStay={onSetStay}
+          onOverrideSoil={onOverrideSoil}
+          onEndPlantingAsFailed={onEndPlantingAsFailed}
+        />
       )}
       <NameBedForm onNameBed={onNameBed} />
       <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
@@ -67,14 +69,43 @@ export function GardenSurface({
   );
 }
 
+function ForecastGlance({ weather }: { weather?: GrowingPlaceForecast }) {
+  if (!weather) {
+    return null;
+  }
+
+  return (
+    <section className="forecast" aria-label="Growing-place forecast">
+      <h2>Growing-place forecast</h2>
+      <p>{glanceLine("Today", weather.today)}</p>
+      <h3>This week</h3>
+      <ul>
+        {weather.week.map((day) => (
+          <li key={day.date}>{glanceLine(null, day)}</li>
+        ))}
+      </ul>
+      {enoughRain(weather) ? <p>Enough rain to dismiss water.</p> : null}
+      {frostNight(weather) ? <p>Frost is coming.</p> : null}
+    </section>
+  );
+}
+
+function glanceLine(label: string | null, day: ForecastDay): string {
+  const rain = day.inchesOfRain > 0 ? `${day.inchesOfRain} in rain` : "dry";
+  const body = `${day.date} · ${day.highF}° / ${day.lowF}° · ${rain}`;
+  return label ? `${label} · ${body}` : body;
+}
+
 function CareList({
   garden,
+  weather,
   onMarkCareEventDone,
 }: {
   garden: GardenBook;
+  weather?: GrowingPlaceForecast;
   onMarkCareEventDone: (careEventId: string) => void;
 }) {
-  const due = dueCareEvents(garden);
+  const due = dueCareEvents(garden, weather);
   if (due.length === 0) {
     return null;
   }

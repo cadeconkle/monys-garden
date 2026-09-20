@@ -1,4 +1,5 @@
 import type { Variety } from "./catalog";
+import { enoughRain, frostNight, type GrowingPlaceForecast } from "./weather";
 
 export const AREAS = ["Front", "Side", "Back", "Patio"] as const;
 export type Area = (typeof AREAS)[number];
@@ -12,7 +13,13 @@ export type Stay = (typeof STAYS)[number];
 export const PLANTING_ENDS = ["open", "harvested", "winter-kill", "failed"] as const;
 export type PlantingEnd = (typeof PLANTING_ENDS)[number];
 
-export const CARE_EVENT_TYPES = ["water", "harvest", "replant", "set-aside-seeds"] as const;
+export const PLANTING_CARE_EVENT_TYPES = [
+  "water",
+  "harvest",
+  "replant",
+  "set-aside-seeds",
+] as const;
+export const CARE_EVENT_TYPES = [...PLANTING_CARE_EVENT_TYPES, "frost"] as const;
 export type CareEventType = (typeof CARE_EVENT_TYPES)[number];
 
 export type Bed = {
@@ -36,10 +43,11 @@ export type Planting = {
 export type CareEvent = {
   id: string;
   type: CareEventType;
-  plantingId: string;
-  varietyName: string;
-  bedName: string;
+  plantingId?: string;
+  varietyName?: string;
+  bedName?: string;
   seedSaveCount?: number;
+  frostOn?: string;
   done: boolean;
 };
 
@@ -192,16 +200,58 @@ export function markCareEventDone(garden: GardenBook, careEventId: string): Gard
   };
 }
 
-export function dueCareEvents(garden: GardenBook): CareEvent[] {
+export function ensureFrostCareEvent(
+  garden: GardenBook,
+  forecast?: GrowingPlaceForecast,
+): GardenBook {
+  if (!forecast) {
+    return garden;
+  }
+
+  const night = frostNight(forecast);
+  if (!night) {
+    return garden;
+  }
+
+  const already = garden.careEvents.some(
+    (event) => event.type === "frost" && event.frostOn === night.date,
+  );
+  if (already) {
+    return garden;
+  }
+
+  return {
+    ...garden,
+    careEvents: [
+      ...garden.careEvents,
+      {
+        id: `frost:${night.date}`,
+        type: "frost",
+        frostOn: night.date,
+        done: false,
+      },
+    ],
+  };
+}
+
+export function dueCareEvents(
+  garden: GardenBook,
+  forecast?: GrowingPlaceForecast,
+): CareEvent[] {
+  const withForecast = ensureFrostCareEvent(garden, forecast);
   const failedIds = new Set(
     garden.plantings.filter((planting) => planting.end === "failed").map((planting) => planting.id),
   );
+  const rainDismissesWater = forecast ? enoughRain(forecast) : false;
 
-  return garden.careEvents.filter((event) => {
+  return withForecast.careEvents.filter((event) => {
     if (event.done) {
       return false;
     }
-    if (event.type === "water" && failedIds.has(event.plantingId)) {
+    if (event.type === "water" && event.plantingId && failedIds.has(event.plantingId)) {
+      return false;
+    }
+    if (event.type === "water" && rainDismissesWater) {
       return false;
     }
     return true;
@@ -209,6 +259,10 @@ export function dueCareEvents(garden: GardenBook): CareEvent[] {
 }
 
 export function careEventLabel(event: CareEvent): string {
+  if (event.type === "frost") {
+    return event.frostOn ? `Cover for frost on ${event.frostOn}` : "Cover for frost";
+  }
+
   if (event.type === "set-aside-seeds") {
     if (event.seedSaveCount != null) {
       return `Set aside ${event.seedSaveCount} seeds of ${event.varietyName}`;
@@ -225,15 +279,18 @@ export type LockScreenNotice = {
   label: string;
 };
 
-export function dueLockScreenNotices(garden: GardenBook): LockScreenNotice[] {
-  return dueCareEvents(garden).map((event) => ({
+export function dueLockScreenNotices(
+  garden: GardenBook,
+  forecast?: GrowingPlaceForecast,
+): LockScreenNotice[] {
+  return dueCareEvents(garden, forecast).map((event) => ({
     id: event.id,
     label: careEventLabel(event),
   }));
 }
 
 function careEventsFor(planting: StartPlanting, plantingId: string): CareEvent[] {
-  return CARE_EVENT_TYPES.map((type) => ({
+  return PLANTING_CARE_EVENT_TYPES.map((type) => ({
     id: crypto.randomUUID(),
     type,
     plantingId,

@@ -4,6 +4,7 @@ import type { Variety, VarietyFinish } from "./catalog";
 import { createHousehold } from "./household";
 import { createLockScreen } from "./lock-screen";
 import { openAsGardener, openGarden } from "./open-garden";
+import type { ForecastDay, GrowingPlaceForecast } from "./weather";
 
 async function goToCatalog(garden: RenderResult) {
   await userEvent.click(garden.getAllByRole("link", { name: "Catalog" })[0]);
@@ -1318,6 +1319,148 @@ test("ending a Planting early as failed stops further water Care events", async 
   expect(garden.getByText("Harvest Queenette Thai basil in Basil pot")).toBeVisible();
 });
 
+test("enough rain dismisses an open water Care event", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+    weather: rainyWeek(),
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+});
+
+test("coming frost creates a frost Care event", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+    weather: frostWeek(),
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-01",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
+});
+
+test("coming frost creates a frost Care event even when nothing is in the ground", async () => {
+  const garden = openGarden({
+    weather: frostWeek(),
+  });
+
+  await openAsGardener(garden);
+
+  expect(garden.getByText("Nothing is in the ground yet.")).toBeVisible();
+  expect(garden.getByText("Cover for frost on 2026-04-03")).toBeVisible();
+});
+
+test("a Variety can show planting-window advice driven by the Growing-place forecast", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+    weather: frostWeek(),
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
+  await userEvent.click(garden.getByRole("link", { name: "tomato" }));
+  await userEvent.click(garden.getByRole("link", { name: "Celebrity tomato" }));
+
+  expect(await garden.findByRole("heading", { name: "Celebrity tomato" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Planting-window advice" })).toBeVisible();
+  expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
+});
+
+test("planting-window advice uses the Growing-place frost pair when the week is above freezing", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+    weather: {
+      today: { date: "2026-03-20", highF: 68, lowF: 46, inchesOfRain: 0 },
+      week: [
+        { date: "2026-03-20", highF: 68, lowF: 46, inchesOfRain: 0 },
+        { date: "2026-03-21", highF: 70, lowF: 48, inchesOfRain: 0 },
+        { date: "2026-03-22", highF: 72, lowF: 50, inchesOfRain: 0 },
+        { date: "2026-03-23", highF: 71, lowF: 49, inchesOfRain: 0 },
+        { date: "2026-03-24", highF: 69, lowF: 47, inchesOfRain: 0 },
+        { date: "2026-03-25", highF: 67, lowF: 45, inchesOfRain: 0 },
+        { date: "2026-03-26", highF: 66, lowF: 44, inchesOfRain: 0 },
+      ],
+    },
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+  await userEvent.click(await garden.findByRole("link", { name: "vegetables" }));
+  await userEvent.click(garden.getByRole("link", { name: "tomato" }));
+  await userEvent.click(garden.getByRole("link", { name: "Celebrity tomato" }));
+
+  expect(await garden.findByRole("heading", { name: "Celebrity tomato" })).toBeVisible();
+  expect(garden.getByText("Don't set tomato out until this frost window.")).toBeVisible();
+});
+
+test("the Garden shows a Growing-place forecast glance for Fuquay-Varina, not a weather app", async () => {
+  const garden = openGarden({
+    weather: rainyWeek(),
+  });
+
+  await openAsGardener(garden);
+
+  expect(garden.getByRole("heading", { name: "Garden" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Growing-place forecast" })).toBeVisible();
+  expect(garden.getByText("Today · 2026-06-15 · 84° / 68° · 0.4 in rain")).toBeVisible();
+  expect(garden.getByText("This week")).toBeVisible();
+  expect(garden.getByText("2026-06-16 · 86° / 70° · dry")).toBeVisible();
+  expect(garden.getByText("Enough rain to dismiss water.")).toBeVisible();
+  expect(garden.getByText("Fuquay-Varina, North Carolina")).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Weather" })).toBeNull();
+  expect(garden.queryByRole("heading", { name: "Weather" })).toBeNull();
+});
+
 test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created as an Area", async () => {
   const garden = openGarden();
 
@@ -1523,6 +1666,32 @@ test("a Bed can override Soil; the Variety default remains when there is no over
   expect(garden.getByText("Soil: loose garden loam")).toBeVisible();
   expect(garden.getByText("Fertilizer advice: monthly citrus food in summer")).toBeVisible();
 });
+
+function rainyWeek(): GrowingPlaceForecast {
+  const week: ForecastDay[] = [
+    { date: "2026-06-15", highF: 84, lowF: 68, inchesOfRain: 0.4 },
+    { date: "2026-06-16", highF: 86, lowF: 70, inchesOfRain: 0 },
+    { date: "2026-06-17", highF: 88, lowF: 71, inchesOfRain: 0 },
+    { date: "2026-06-18", highF: 87, lowF: 70, inchesOfRain: 0 },
+    { date: "2026-06-19", highF: 85, lowF: 69, inchesOfRain: 0 },
+    { date: "2026-06-20", highF: 84, lowF: 68, inchesOfRain: 0 },
+    { date: "2026-06-21", highF: 86, lowF: 70, inchesOfRain: 0 },
+  ];
+  return { today: week[0], week };
+}
+
+function frostWeek(): GrowingPlaceForecast {
+  const week: ForecastDay[] = [
+    { date: "2026-04-02", highF: 58, lowF: 41, inchesOfRain: 0 },
+    { date: "2026-04-03", highF: 55, lowF: 28, inchesOfRain: 0 },
+    { date: "2026-04-04", highF: 62, lowF: 40, inchesOfRain: 0 },
+    { date: "2026-04-05", highF: 68, lowF: 46, inchesOfRain: 0 },
+    { date: "2026-04-06", highF: 70, lowF: 48, inchesOfRain: 0 },
+    { date: "2026-04-07", highF: 72, lowF: 50, inchesOfRain: 0 },
+    { date: "2026-04-08", highF: 74, lowF: 52, inchesOfRain: 0 },
+  ];
+  return { today: week[0], week };
+}
 
 async function nameTheBed(garden: RenderResult, area: string, name: string) {
   await userEvent.selectOptions(garden.getByLabelText("Area"), area);

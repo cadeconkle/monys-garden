@@ -15,6 +15,7 @@ import {
   dueLockScreenNotices,
   emptyGarden,
   endPlantingAsFailed,
+  ensureFrostCareEvent,
   markCareEventDone,
   nameBed,
   overrideSoil,
@@ -36,18 +37,23 @@ import { ListPage, ListsPage } from "./lists-surface";
 import { Shell } from "./shell";
 import { curatedShops, type Shop } from "./shops";
 import { ShopsSurface } from "./shops-surface";
+import type { GrowingPlaceForecast } from "./weather";
 
 export function GardenApp({
   household,
   catalog = thinCatalog,
   techniques = catalogTechniques,
   shops = curatedShops,
+  weather,
+  loadForecast,
   lockScreen,
 }: {
   household: Household;
   catalog?: readonly Variety[];
   techniques?: readonly Technique[];
   shops?: readonly Shop[];
+  weather?: GrowingPlaceForecast;
+  loadForecast?: () => Promise<GrowingPlaceForecast>;
   lockScreen?: LockScreen;
 }) {
   const [ready, setReady] = useState(false);
@@ -58,7 +64,37 @@ export function GardenApp({
   const [lists] = useState(createLists);
   const [, setRevision] = useState(0);
   const [garden, setGarden] = useState<GardenBook>(emptyGarden);
+  const [forecast, setForecast] = useState(weather);
   const planted = plantedVarietyNames(garden);
+
+  useEffect(() => {
+    if (weather) {
+      setForecast(weather);
+      return;
+    }
+
+    if (!loadForecast) {
+      return;
+    }
+
+    let cancelled = false;
+    loadForecast().then(
+      (loaded) => {
+        if (!cancelled) {
+          setForecast(loaded);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setForecast(undefined);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [weather, loadForecast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,8 +130,8 @@ export function GardenApp({
     if (!gardener) {
       return;
     }
-    void lockScreen?.sync(dueLockScreenNotices(garden));
-  }, [gardener, garden, lockScreen]);
+    void lockScreen?.sync(dueLockScreenNotices(garden, forecast));
+  }, [gardener, garden, forecast, lockScreen]);
 
   if (!ready) {
     return (
@@ -141,6 +177,7 @@ export function GardenApp({
             <GardenSurface
               catalog={catalog}
               garden={garden}
+              weather={forecast}
               onNameBed={(area, name) => setGarden((current) => nameBed(current, area, name))}
               onStartPlanting={(planting) => {
                 let plantingError: string | null = null;
@@ -158,7 +195,9 @@ export function GardenApp({
                 setGarden((current) => overrideSoil(current, area, bedName, soil))
               }
               onMarkCareEventDone={(careEventId) =>
-                setGarden((current) => markCareEventDone(current, careEventId))
+                setGarden((current) =>
+                  markCareEventDone(ensureFrostCareEvent(current, forecast), careEventId),
+                )
               }
               onEndPlantingAsFailed={(plantingId) =>
                 setGarden((current) => endPlantingAsFailed(current, plantingId))
@@ -182,6 +221,7 @@ export function GardenApp({
               onFavoritesChange={() => setRevision((n) => n + 1)}
               lists={lists}
               onListsChange={() => setRevision((n) => n + 1)}
+              weather={forecast}
             />
           }
         />

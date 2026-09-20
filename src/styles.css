@@ -281,6 +281,7 @@ button:disabled {
   letter-spacing: -0.02em;
 }
 
+.planting-window,
 .buy-place {
   margin: 1.2rem 0;
 }
@@ -351,6 +352,32 @@ button:disabled {
 
 .areas .garden-form {
   margin-top: 0.8rem;
+}
+
+.forecast {
+  margin: 0 0 1.6rem;
+}
+
+.forecast h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.35rem;
+}
+
+.forecast h3 {
+  margin: 0.7rem 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.forecast ul {
+  list-style: none;
+  margin: 0.35rem 0 0.7rem;
+  padding: 0;
+}
+
+.forecast li {
+  margin: 0 0 0.25rem;
+  color: var(--quiet);
+  font-size: 1rem;
 }
 
 .care {

@@ -23,6 +23,7 @@ import {
   type VarietyFinish,
 } from "./catalog";
 import type { BuyPlace } from "./shops";
+import { plantingWindowAdvice, type GrowingPlaceForecast } from "./weather";
 
 export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
   const [search] = useSearchParams();
@@ -134,6 +135,7 @@ export function VarietyPage({
   onFavoritesChange,
   lists,
   onListsChange,
+  weather,
 }: {
   catalog: readonly Variety[];
   planted?: readonly string[];
@@ -141,6 +143,7 @@ export function VarietyPage({
   onFavoritesChange: () => void;
   lists: Lists;
   onListsChange: () => void;
+  weather?: GrowingPlaceForecast;
 }) {
   const params = useParams();
   const category = categoryFromSlug(params.categorySlug ?? "");
@@ -171,6 +174,7 @@ export function VarietyPage({
         favorites={favorites}
         onFavoritesChange={onFavoritesChange}
       />
+      <PlantingWindowAdvice kind={variety.kind} weather={weather} />
       <ListMembership variety={variety} lists={lists} onListsChange={onListsChange} />
       {variety.buyPlace ? <BuyPlaceFacts buyPlace={variety.buyPlace} /> : null}
       {showsFinish(variety, planted) && variety.finish ? (
@@ -182,6 +186,30 @@ export function VarietyPage({
       )}
       <Suggestions catalog={catalog} variety={variety} />
     </main>
+  );
+}
+
+function PlantingWindowAdvice({
+  kind,
+  weather,
+}: {
+  kind: string;
+  weather?: GrowingPlaceForecast;
+}) {
+  if (!weather) {
+    return null;
+  }
+
+  const advice = plantingWindowAdvice(kind, weather);
+  if (!advice) {
+    return null;
+  }
+
+  return (
+    <section className="planting-window">
+      <h2>Planting-window advice</h2>
+      <p>{advice}</p>
+    </section>
   );
 }
 

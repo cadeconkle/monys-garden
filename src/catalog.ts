@@ -66,6 +66,7 @@ export type Variety = {
   fit: Fit;
   why: string;
   kitchenTradition?: KitchenTradition | "none";
+  seedSaveCount?: number;
   buyPlace?: BuyPlace;
   finish?: VarietyFinish;
 };

@@ -330,10 +330,44 @@ button:disabled {
   font-size: 1.15rem;
 }
 
-.plantings {
+.plantings,
+.care ul {
   list-style: none;
   margin: 0.35rem 0 0;
   padding: 0;
+}
+
+.plantings li {
+  margin: 0 0 0.85rem;
+}
+
+.plantings p {
+  margin: 0 0 0.35rem;
+}
+
+.plantings button {
+  margin-top: 0;
+}
+
+.care {
+  margin: 0 0 1.6rem;
+}
+
+.care h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.35rem;
+}
+
+.care li {
+  margin: 0 0 0.7rem;
+}
+
+.care p {
+  margin: 0 0 0.35rem;
+}
+
+.care button {
+  margin-top: 0;
 }
 
 .garden-form {

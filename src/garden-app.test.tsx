@@ -1073,6 +1073,137 @@ test("a later season in the same Bed is a new Planting; the old Planting is unch
   expect(garden.getByText("Celebrity tomato · transplant · 2027-04-10")).toBeVisible();
 });
 
+test("a Planting produces water, harvest, replant, and set aside seeds Care events", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByRole("heading", { name: "Care" })).toBeVisible();
+  expect(garden.getByText("Water Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
+});
+
+test("the Gardener can mark a Care event done and it leaves the due list", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  const water = garden.getByText("Water Celebrity tomato in Tomato row").closest("li");
+  expect(water).not.toBeNull();
+  await userEvent.click(within(water!).getByRole("button", { name: "Mark done" }));
+
+  expect(garden.queryByText("Water Celebrity tomato in Tomato row")).toBeNull();
+  expect(garden.getByText("Harvest Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Replant Celebrity tomato in Tomato row")).toBeVisible();
+  expect(garden.getByText("Set aside seeds of Celebrity tomato")).toBeVisible();
+});
+
+test("set aside seeds uses the Variety's seed-save count, not a made-up number", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Celebrity tomato",
+        category: "vegetables",
+        kind: "tomato",
+        fit: "fair",
+        why: "Sets fruit here, then stalls in July humidity.",
+        seedSaveCount: 47,
+      },
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+        seedSaveCount: 12,
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Back", "Tomato row");
+  await startThePlanting(garden, {
+    variety: "Celebrity tomato",
+    bed: "Back · Tomato row",
+    plantedOn: "2026-04-12",
+    start: "transplant",
+  });
+
+  expect(garden.getByText("Set aside 47 seeds of Celebrity tomato")).toBeVisible();
+  expect(garden.queryByText("Set aside 12 seeds of Celebrity tomato")).toBeNull();
+  expect(garden.queryByText("Set aside seeds of Celebrity tomato")).toBeNull();
+});
+
+test("ending a Planting early as failed stops further water Care events", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await nameTheBed(garden, "Patio", "Basil pot");
+  await startThePlanting(garden, {
+    variety: "Queenette Thai basil",
+    bed: "Patio · Basil pot",
+    plantedOn: "2026-05-02",
+    start: "seed",
+  });
+
+  expect(garden.getByText("Water Queenette Thai basil in Basil pot")).toBeVisible();
+
+  const planting = garden.getByText("Queenette Thai basil · seed · 2026-05-02").closest("li");
+  expect(planting).not.toBeNull();
+  await userEvent.click(
+    within(planting!).getByRole("button", { name: "End this Planting as failed" }),
+  );
+
+  expect(garden.queryByText("Water Queenette Thai basil in Basil pot")).toBeNull();
+  expect(garden.getByText("Harvest Queenette Thai basil in Basil pot")).toBeVisible();
+});
+
 test("Areas are only Front, Side, Back, and Patio; the kitchen cannot be created as an Area", async () => {
   const garden = openGarden();
 

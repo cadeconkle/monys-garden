@@ -11,7 +11,14 @@ import {
 } from "./catalog-surface";
 import { createFavorites } from "./favorites";
 import { FavoritesPage } from "./favorites-surface";
-import { emptyGarden, nameBed, startPlanting, type GardenBook } from "./garden";
+import {
+  emptyGarden,
+  endPlantingAsFailed,
+  markCareEventDone,
+  nameBed,
+  startPlanting,
+  type GardenBook,
+} from "./garden";
 import { GardenSurface } from "./garden-surface";
 import { Gate } from "./gate";
 import {
@@ -124,6 +131,12 @@ export function GardenApp({
                 });
                 return plantingError;
               }}
+              onMarkCareEventDone={(careEventId) =>
+                setGarden((current) => markCareEventDone(current, careEventId))
+              }
+              onEndPlantingAsFailed={(plantingId) =>
+                setGarden((current) => endPlantingAsFailed(current, plantingId))
+              }
             />
           }
         />

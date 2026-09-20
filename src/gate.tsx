@@ -30,7 +30,7 @@ export function Gate({ growingPlace, gardenerExists, error, onOpen }: GateProps)
       <p className="lede">
         {gardenerExists
           ? "Open as the Gardener to see the Catalog and the Garden."
-          : "A private companion for this yard and kitchen. The first opening is the only Gardener."}
+          : "A private book for this Growing place and kitchen. The first opening is the only Gardener."}
       </p>
       <form className="gate-form" onSubmit={handleSubmit}>
         <label>

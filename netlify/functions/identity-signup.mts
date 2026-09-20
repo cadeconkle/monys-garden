@@ -20,22 +20,7 @@ const handler: Handler = async (event) => {
     return { statusCode: 403, body: "There is only one Gardener." };
   }
 
-  if (!row) {
-    await db.insert(household).values({
-      id: 1,
-      gardenerIdentityId: identityId,
-      gardenerEmail: email,
-    });
-  }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      app_metadata: {
-        roles: ["gardener"],
-      },
-    }),
-  };
+  return { statusCode: 200, body: "{}" };
 };
 
 export { handler };

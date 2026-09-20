@@ -24,8 +24,8 @@ export async function openAsGardener(
   view: RenderResult,
   credentials = { email: "mony@garden.test", password: "soil-and-rain" },
 ) {
-  const gardener = userEvent.setup();
-  await gardener.type(await view.findByLabelText("Email"), credentials.email);
-  await gardener.type(view.getByLabelText("Password"), credentials.password);
-  await gardener.click(view.getByRole("button", { name: "Open the garden" }));
+  const keyboard = userEvent.setup();
+  await keyboard.type(await view.findByLabelText("Email"), credentials.email);
+  await keyboard.type(view.getByLabelText("Password"), credentials.password);
+  await keyboard.click(view.getByRole("button", { name: "Open the garden" }));
 }

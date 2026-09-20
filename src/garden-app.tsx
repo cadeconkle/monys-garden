@@ -19,12 +19,20 @@ export function GardenApp({ household }: { household: Household }) {
   useEffect(() => {
     let cancelled = false;
 
-    household.status().then((current) => {
-      if (cancelled) return;
-      setGardener(current.gardener);
-      setGardenerExists(current.gardenerExists);
-      setReady(true);
-    });
+    household.status().then(
+      (current) => {
+        if (cancelled) return;
+        setGardener(current.gardener);
+        setGardenerExists(current.gardenerExists);
+        setReady(true);
+      },
+      () => {
+        if (cancelled) return;
+        setGardenerExists(true);
+        setError("The garden could not be opened.");
+        setReady(true);
+      },
+    );
 
     return () => {
       cancelled = true;

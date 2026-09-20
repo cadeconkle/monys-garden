@@ -10,6 +10,7 @@ import {
 type HouseholdResponse = {
   gardenerExists: boolean;
   gardener: Gardener | null;
+  isTheGardener?: boolean;
 };
 
 export function createNetlifyHousehold(): Household {
@@ -27,9 +28,12 @@ export function createNetlifyHousehold(): Household {
       return { gardenerExists: remote.gardenerExists, gardener: null };
     },
     async open(email, password) {
-      const remote = await readHousehold();
+      const remote = await readHousehold(email);
 
       try {
+        if (remote.gardenerExists && remote.isTheGardener === false) {
+          throw new HouseholdAlreadyHasAGardenerError();
+        }
         if (remote.gardenerExists) {
           await login(email, password);
         } else {
@@ -56,20 +60,23 @@ export function createNetlifyHousehold(): Household {
   };
 }
 
-async function readHousehold(): Promise<HouseholdResponse> {
-  const response = await fetch("/api/household");
+async function readHousehold(email?: string): Promise<HouseholdResponse> {
+  const path = email
+    ? `/api/household?email=${encodeURIComponent(email)}`
+    : "/api/household";
+  const response = await fetch(path);
   if (!response.ok) {
-    return { gardenerExists: false, gardener: null };
+    throw new WrongGardenerError();
   }
   return (await response.json()) as HouseholdResponse;
 }
 
 function asHouseholdError(caught: unknown): Error {
-  if (caught instanceof AuthError && caught.status === 403) {
-    return new HouseholdAlreadyHasAGardenerError();
-  }
   if (caught instanceof HouseholdAlreadyHasAGardenerError) {
     return caught;
+  }
+  if (caught instanceof AuthError && caught.status === 403) {
+    return new HouseholdAlreadyHasAGardenerError();
   }
   return new WrongGardenerError();
 }

@@ -8,11 +8,13 @@ import { GROWING_PLACE } from "../../src/growing-place";
 export default async (req: Request) => {
   if (req.method === "GET") {
     const identity = await getUser();
+    const offeredEmail = new URL(req.url).searchParams.get("email");
     const [row] = await db.select().from(household).where(eq(household.id, 1)).limit(1);
 
     return Response.json({
       growingPlace: GROWING_PLACE,
       gardenerExists: Boolean(row),
+      isTheGardener: Boolean(row && offeredEmail && row.gardenerEmail === offeredEmail),
       gardener:
         identity && row && row.gardenerIdentityId === identity.id
           ? { email: row.gardenerEmail }

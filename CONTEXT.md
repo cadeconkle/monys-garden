@@ -13,8 +13,8 @@ The household's planted space around the house at the Growing place: front, side
 _Avoid_: landscape, plot, kitchen garden
 
 **Gardener**:
-Mony — the only person this app is for.
-_Avoid_: user, owner, wife
+Mony — the only person this app is for. Cade may sit at a desktop and help plan, but he acts as the Gardener; there is no second profile.
+_Avoid_: user, owner, wife, household account
 
 ## Plants
 
@@ -35,19 +35,55 @@ Asian, American, or both — the cooking the Gardener uses a Variety for. Only f
 _Avoid_: style, Asian style, American style
 
 **Ornamental**:
-A Variety grown for how it looks in the yard, not for the kitchen. Beauty is American-yard only; this is not an Asian ornamental garden catalog.
-_Avoid_: decoration, beauty plant, landscaping plant
+A Variety grown for how it looks in an American yard, not for the kitchen. Plants that are common in Fuquay-Varina front yards are allowed even when their origin is Asian (azalea, camellia). This is not a native-only list and not an Asian ornamental garden catalog.
+_Avoid_: decoration, beauty plant, landscaping plant, native-only
+
+**Winter fate**:
+How a Variety is expected to get through winter at the Growing place: bring in, leave out, dies — replant, or protect in place.
+_Avoid_: hardiness (the USDA zone is related; it is not this)
 
 ## Planted space
 
 **Area**:
-One of Front, Side, Back, Patio, or Indoors — a part of the Garden. Indoors is a holding place, not a garden.
-_Avoid_: zone, yard
+One of Front, Side, Back, or Patio — a part of the Garden. Indoors is never an Area.
+_Avoid_: zone, yard, indoors
 
 **Bed**:
 A named spot inside an Area: an in-ground bed, a row, a pot, or a group of pots.
 _Avoid_: plot, container, spot
 
+**Bed plan**:
+The Variety a Bed is meant to grow, lasting across years.
+_Avoid_: assignment, rotation, intent
+
 **Planting**:
-A Variety actually being grown in a Bed.
+One season of a Variety actually growing in a Bed. A new Planting starts each time it goes in; the Bed plan remembers what belongs there.
 _Avoid_: instance, entry, crop
+
+**Stay**:
+Whether a Planting is in its Bed or brought indoors. Stay does not change Area.
+_Avoid_: location, indoors area
+
+## Saving and shops
+
+**Favorite**:
+A heart the Gardener puts on a Variety.
+_Avoid_: bookmark, star, save
+
+**List**:
+A named collection of Varieties the Gardener makes.
+_Avoid_: folder, album, favorites (a List is not the heart)
+
+**Shop**:
+A curated local business: an Asian grocery, an American grocery, or a plant shop.
+_Avoid_: store, vendor, directory
+
+**Buy place**:
+A Shop, or a kind of Shop, where the Gardener might get a Variety (seed, grocery, nursery).
+_Avoid_: source, vendor
+
+## Care
+
+**Care event**:
+A thing the Garden needs now: water, harvest, replant, or a weather-forced change (frost tonight, rain already watered). The Gardener is told on the lock screen.
+_Avoid_: reminder, notification, task

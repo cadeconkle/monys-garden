@@ -4,8 +4,10 @@ import { slugFor, varietyPath, type Variety } from "./catalog";
 import type { Lists } from "./lists";
 
 export function ListsPage({ lists, onListsChange }: { lists: Lists; onListsChange: () => void }) {
+  const named = lists.all();
+
   return (
-    <main className="surface">
+    <main className="surface lists-page">
       <nav className="trail" aria-label="Catalog trail">
         <Link to="/catalog">Catalog</Link>
       </nav>
@@ -27,13 +29,17 @@ export function ListsPage({ lists, onListsChange }: { lists: Lists; onListsChang
         </label>
         <button type="submit">Create List</button>
       </form>
-      {lists.all().length === 0 ? (
-        <p>No Lists yet.</p>
+      {named.length === 0 ? (
+        <div className="empty-garden">
+          <p>No Lists yet.</p>
+          <p>Write a name, then add Varieties from their pages.</p>
+        </div>
       ) : (
         <ul className="rungs">
-          {lists.all().map((list) => (
+          {named.map((list) => (
             <li key={list.name}>
               <Link to={`/lists/${slugFor(list.name)}`}>{list.name}</Link>
+              <p className="rung-meta">{varietyCount(list.varietyNames.length)}</p>
             </li>
           ))}
         </ul>
@@ -55,13 +61,15 @@ export function ListPage({
   const list = lists.find(params.listSlug ?? "");
   if (!list) {
     return (
-      <main className="surface">
+      <main className="surface lists-page">
         <nav className="trail" aria-label="Catalog trail">
           <Link to="/catalog">Catalog</Link>
           <Link to="/lists">Lists</Link>
         </nav>
         <h1>Lists</h1>
-        <p>That List is not here.</p>
+        <div className="empty-garden">
+          <p>That List is not here.</p>
+        </div>
       </main>
     );
   }
@@ -71,18 +79,21 @@ export function ListPage({
     .filter((variety): variety is Variety => Boolean(variety));
 
   return (
-    <main className="surface">
+    <main className="surface lists-page">
       <nav className="trail" aria-label="Catalog trail">
         <Link to="/catalog">Catalog</Link>
         <Link to="/lists">Lists</Link>
       </nav>
       <h1>{list.name}</h1>
       {varieties.length === 0 ? (
-        <p>No Varieties on this List yet.</p>
+        <div className="empty-garden">
+          <p>No Varieties on this List yet.</p>
+          <p>Add them from a Variety page in the Catalog.</p>
+        </div>
       ) : (
         <ul className="rungs">
           {varieties.map((variety) => (
-            <li key={variety.name}>
+            <li className="variety-row" key={variety.name}>
               <Link to={varietyPath(variety)}>{variety.name}</Link>
               <button
                 type="button"
@@ -99,4 +110,8 @@ export function ListPage({
       )}
     </main>
   );
+}
+
+function varietyCount(count: number) {
+  return count === 1 ? "1 Variety" : `${count} Varieties`;
 }

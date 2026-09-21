@@ -15,18 +15,21 @@ export function FavoritesPage({
     .filter((variety): variety is Variety => Boolean(variety));
 
   return (
-    <main className="surface">
+    <main className="surface favorites-page">
       <nav className="trail" aria-label="Catalog trail">
         <Link to="/catalog">Catalog</Link>
       </nav>
       <h1>Favorites</h1>
       <p>A heart on a Variety. Not a List.</p>
       {hearted.length === 0 ? (
-        <p>No Favorites yet.</p>
+        <div className="empty-garden">
+          <p>No Favorites yet.</p>
+          <p>Heart a Variety in the Catalog. That heart lives here, not on a List.</p>
+        </div>
       ) : (
         <ul className="rungs">
           {hearted.map((variety) => (
-            <li key={variety.name}>
+            <li className="variety-row" key={variety.name}>
               <Link to={varietyPath(variety)}>{variety.name}</Link>
             </li>
           ))}

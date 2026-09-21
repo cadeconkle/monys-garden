@@ -204,8 +204,9 @@ function BedCard({
           {bed.plantings.map((planting) => (
             <li key={planting.id}>
               <p>
-                <Link to={varietyPath(planting.variety)}>{planting.variety.name}</Link>
-                {` · ${planting.start} · ${planting.plantedOn}`}
+                <Link to={varietyPath(planting.variety)}>
+                  {`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}
+                </Link>
               </p>
               <p>Stay: {planting.stay}</p>
               {planting.stay === "in-bed" ? (

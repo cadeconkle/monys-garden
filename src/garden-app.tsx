@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { catalogTechniques, thinCatalog, type Technique, type Variety } from "./catalog";
 import {
   CatalogIndex,
@@ -220,6 +220,7 @@ export function GardenApp({
 
   return (
     <Shell growingPlace={household.growingPlace.name} gardener={gardener}>
+      <ScrollToTop />
       <Routes>
         <Route
           path="/"
@@ -304,4 +305,15 @@ export function GardenApp({
 
 function plantedVarietyNames(garden: GardenBook): string[] {
   return [...new Set(garden.plantings.map((planting) => planting.variety.name))];
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (import.meta.env.MODE === "test") {
+      return;
+    }
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }

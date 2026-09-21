@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import type { Favorites } from "./favorites";
 import type { Lists } from "./lists";
@@ -529,6 +530,7 @@ function CatalogFilters() {
 function FindVarietySearch() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
+  const [draft, setDraft] = useState(q);
 
   return (
     <div className="search">
@@ -536,10 +538,11 @@ function FindVarietySearch() {
         Find a Variety
         <input
           type="search"
-          value={q}
+          value={draft}
           onChange={(event) => {
-            const next = new URLSearchParams(params);
             const value = event.target.value;
+            setDraft(value);
+            const next = new URLSearchParams(params);
             if (value) {
               next.set("q", value);
             } else {

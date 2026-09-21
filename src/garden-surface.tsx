@@ -233,10 +233,12 @@ function BedCard({
           ))}
         </ul>
       ) : null}
-      <OverrideSoilForm
-        bedName={bed.name}
-        onOverride={(next) => onOverrideSoil(area, bed.name, next)}
-      />
+      {bed.plan || bed.plantings.length > 0 ? (
+        <OverrideSoilForm
+          bedName={bed.name}
+          onOverride={(next) => onOverrideSoil(area, bed.name, next)}
+        />
+      ) : null}
     </article>
   );
 }
@@ -333,7 +335,7 @@ function StartPlantingForm({
   const [error, setError] = useState<string | null>(null);
   const [varietyName, setVarietyName] = useState("");
   const [chosenBed, setChosenBed] = useState("");
-  const [plantedOn, setPlantedOn] = useState("");
+  const [plantedOn, setPlantedOn] = useState(() => new Date().toISOString().slice(0, 10));
   const [start, setStart] = useState("");
 
   return (
@@ -356,7 +358,7 @@ function StartPlantingForm({
         setError(null);
         setVarietyName("");
         setChosenBed("");
-        setPlantedOn("");
+        setPlantedOn(new Date().toISOString().slice(0, 10));
         setStart("");
       }}
     >

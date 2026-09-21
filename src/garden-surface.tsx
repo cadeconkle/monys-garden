@@ -1,17 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import type { Variety } from "./catalog";
+import { varietyPath, type Variety } from "./catalog";
 import {
   AREAS,
   STARTS,
   careEventLabel,
   currentPlantings,
-  currentPlantingsByArea,
   dueCareEvents,
   fertilizerAdviceFor,
   soilFor,
   type Area,
   type GardenBook,
+  type Planting,
   type Start,
   type StartPlanting,
   type Stay,
@@ -30,6 +30,13 @@ type GardenSurfaceProps = {
   onEndPlantingAsFailed: (plantingId: string) => void;
 };
 
+type AreaBed = {
+  name: string;
+  plan: Variety | null;
+  soil: string | null;
+  plantings: Planting[];
+};
+
 export function GardenSurface({
   catalog,
   garden,
@@ -44,7 +51,7 @@ export function GardenSurface({
   const plantings = currentPlantings(garden);
 
   return (
-    <main className="surface">
+    <main className="surface garden-page">
       <h1>Garden</h1>
       <ForecastGlance weather={weather} />
       <CareList garden={garden} onMarkCareEventDone={onMarkCareEventDone} />
@@ -55,14 +62,13 @@ export function GardenSurface({
             <Link to="/catalog">Open the Catalog</Link>
           </p>
         </div>
-      ) : (
-        <PlantingList
-          garden={garden}
-          onSetStay={onSetStay}
-          onOverrideSoil={onOverrideSoil}
-          onEndPlantingAsFailed={onEndPlantingAsFailed}
-        />
-      )}
+      ) : null}
+      <YardMap
+        garden={garden}
+        onSetStay={onSetStay}
+        onOverrideSoil={onOverrideSoil}
+        onEndPlantingAsFailed={onEndPlantingAsFailed}
+      />
       <div className="garden-work">
         <NameBedForm onNameBed={onNameBed} />
         <StartPlantingForm catalog={catalog} garden={garden} onStartPlanting={onStartPlanting} />
@@ -77,8 +83,12 @@ function ForecastGlance({ weather }: { weather?: GrowingPlaceForecast }) {
   }
 
   return (
-    <section className="forecast" aria-label="Growing-place forecast">
+    <section className="forecast weather-strip" aria-label="Growing-place forecast">
       <h2>Growing-place forecast</h2>
+      <p className="today-temps" aria-hidden="true">
+        <span className="temp-high">{weather.today.highF}°</span>
+        <span className="temp-low">{weather.today.lowF}°</span>
+      </p>
       <p>{glanceLine("Today", weather.today)}</p>
       <h3>This week</h3>
       <ul>
@@ -111,11 +121,11 @@ function CareList({
   }
 
   return (
-    <section className="care">
+    <section className="care care-board">
       <h2>Care</h2>
       <ul aria-label="Care events">
         {due.map((event) => (
-          <li key={event.id}>
+          <li className="care-item" key={event.id}>
             <p>{careEventLabel(event)}</p>
             <button type="button" onClick={() => onMarkCareEventDone(event.id)}>
               Mark done
@@ -127,7 +137,7 @@ function CareList({
   );
 }
 
-function PlantingList({
+function YardMap({
   garden,
   onSetStay,
   onOverrideSoil,
@@ -139,58 +149,97 @@ function PlantingList({
   onEndPlantingAsFailed: (plantingId: string) => void;
 }) {
   return (
-    <div className="areas">
-      {currentPlantingsByArea(garden).map(({ area, beds }) => (
-        <section className="area-band" key={area}>
-          <h2>{area}</h2>
-          {beds.map((bed) => {
-            const soil = soilFor(bed, bed.plantings);
-            const fertilizer = fertilizerAdviceFor(bed, bed.plantings);
+    <div className="yard areas">
+      {AREAS.map((area) => {
+        const beds = bedsInArea(garden, area);
 
-            return (
-              <article className="bed" key={bed.name}>
-                <h3>{bed.name}</h3>
-                {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
-                {soil ? <p>Soil: {soil}</p> : null}
-                {fertilizer ? <p>Fertilizer advice: {fertilizer}</p> : null}
-                <ul className="plantings">
-                  {bed.plantings.map((planting) => (
-                    <li key={planting.id}>
-                      <p>{`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}</p>
-                      <p>Stay: {planting.stay}</p>
-                      {planting.stay === "in-bed" ? (
-                        <button type="button" onClick={() => onSetStay(planting.id, "indoors")}>
-                          Bring indoors
-                        </button>
-                      ) : (
-                        <button type="button" onClick={() => onSetStay(planting.id, "in-bed")}>
-                          Bring back to the Bed
-                        </button>
-                      )}
-                      {planting.end === "failed" ? (
-                        <p>This Planting failed.</p>
-                      ) : (
-                        <button
-                          type="button"
-                          className="danger"
-                          onClick={() => onEndPlantingAsFailed(planting.id)}
-                        >
-                          End this Planting as failed
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <OverrideSoilForm
-                  bedName={bed.name}
-                  onOverride={(next) => onOverrideSoil(area, bed.name, next)}
+        return (
+          <section className="yard-plot area-band" data-area={area} key={area}>
+            <h2>{area}</h2>
+            {beds.length === 0 ? (
+              <p className="plot-empty">No Beds named yet.</p>
+            ) : (
+              beds.map((bed) => (
+                <BedCard
+                  key={bed.name}
+                  area={area}
+                  bed={bed}
+                  onSetStay={onSetStay}
+                  onOverrideSoil={onOverrideSoil}
+                  onEndPlantingAsFailed={onEndPlantingAsFailed}
                 />
-              </article>
-            );
-          })}
-        </section>
-      ))}
+              ))
+            )}
+          </section>
+        );
+      })}
     </div>
+  );
+}
+
+function BedCard({
+  area,
+  bed,
+  onSetStay,
+  onOverrideSoil,
+  onEndPlantingAsFailed,
+}: {
+  area: Area;
+  bed: AreaBed;
+  onSetStay: GardenSurfaceProps["onSetStay"];
+  onOverrideSoil: GardenSurfaceProps["onOverrideSoil"];
+  onEndPlantingAsFailed: (plantingId: string) => void;
+}) {
+  const soil = soilFor(bed, bed.plantings);
+  const fertilizer = fertilizerAdviceFor(bed, bed.plantings);
+
+  return (
+    <article className="bed bed-card">
+      <h3>{bed.name}</h3>
+      {bed.plan ? <p>Bed plan: {bed.plan.name}</p> : null}
+      {soil ? <p>Soil: {soil}</p> : null}
+      {fertilizer ? <p>Fertilizer advice: {fertilizer}</p> : null}
+      {bed.plantings.length > 0 ? (
+        <ul className="plantings">
+          {bed.plantings.map((planting) => (
+            <li key={planting.id}>
+              <p>
+                <Link to={varietyPath(planting.variety)}>
+                  {`${planting.variety.name} · ${planting.start} · ${planting.plantedOn}`}
+                </Link>
+              </p>
+              <p>Stay: {planting.stay}</p>
+              {planting.stay === "in-bed" ? (
+                <button type="button" onClick={() => onSetStay(planting.id, "indoors")}>
+                  Bring indoors
+                </button>
+              ) : (
+                <button type="button" onClick={() => onSetStay(planting.id, "in-bed")}>
+                  Bring back to the Bed
+                </button>
+              )}
+              {planting.end === "failed" ? (
+                <p>This Planting failed.</p>
+              ) : (
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => onEndPlantingAsFailed(planting.id)}
+                >
+                  End this Planting as failed
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {bed.plan || bed.plantings.length > 0 ? (
+        <OverrideSoilForm
+          bedName={bed.name}
+          onOverride={(next) => onOverrideSoil(area, bed.name, next)}
+        />
+      ) : null}
+    </article>
   );
 }
 
@@ -286,7 +335,7 @@ function StartPlantingForm({
   const [error, setError] = useState<string | null>(null);
   const [varietyName, setVarietyName] = useState("");
   const [chosenBed, setChosenBed] = useState("");
-  const [plantedOn, setPlantedOn] = useState("");
+  const [plantedOn, setPlantedOn] = useState(() => new Date().toISOString().slice(0, 10));
   const [start, setStart] = useState("");
 
   return (
@@ -309,7 +358,7 @@ function StartPlantingForm({
         setError(null);
         setVarietyName("");
         setChosenBed("");
-        setPlantedOn("");
+        setPlantedOn(new Date().toISOString().slice(0, 10));
         setStart("");
       }}
     >
@@ -321,10 +370,14 @@ function StartPlantingForm({
           <option value="" disabled>
             Choose a Variety
           </option>
-          {catalog.map((variety) => (
-            <option key={variety.name} value={variety.name}>
-              {variety.name}
-            </option>
+          {varietiesByCategory(catalog).map(({ category, varieties }) => (
+            <optgroup key={category} label={category}>
+              {varieties.map((variety) => (
+                <option key={variety.name} value={variety.name}>
+                  {variety.name}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>
@@ -367,6 +420,53 @@ function StartPlantingForm({
       <button type="submit">Start the Planting</button>
     </form>
   );
+}
+
+function bedsInArea(garden: GardenBook, area: Area): AreaBed[] {
+  const plantingsHere = currentPlantings(garden).filter((planting) => planting.area === area);
+  const named = garden.beds.filter((bed) => bed.area === area);
+  const beds: AreaBed[] = [];
+  const seen = new Set<string>();
+
+  for (const bed of named) {
+    seen.add(bed.name);
+    beds.push({
+      name: bed.name,
+      plan: bed.plan,
+      soil: bed.soil,
+      plantings: plantingsHere.filter((planting) => planting.bedName === bed.name),
+    });
+  }
+
+  for (const planting of plantingsHere) {
+    if (seen.has(planting.bedName)) {
+      continue;
+    }
+    seen.add(planting.bedName);
+    beds.push({
+      name: planting.bedName,
+      plan: null,
+      soil: null,
+      plantings: plantingsHere.filter((item) => item.bedName === planting.bedName),
+    });
+  }
+
+  return beds;
+}
+
+function varietiesByCategory(catalog: readonly Variety[]): { category: string; varieties: Variety[] }[] {
+  const groups: { category: string; varieties: Variety[] }[] = [];
+
+  for (const variety of catalog) {
+    const existing = groups.find((group) => group.category === variety.category);
+    if (existing) {
+      existing.varieties.push(variety);
+    } else {
+      groups.push({ category: variety.category, varieties: [variety] });
+    }
+  }
+
+  return groups;
 }
 
 function bedValue(area: Area, name: string): string {

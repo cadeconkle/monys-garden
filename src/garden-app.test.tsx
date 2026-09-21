@@ -56,8 +56,52 @@ test("an empty Garden still offers the Catalog", async () => {
   await openAsGardener(garden);
 
   expect(garden.getByText("Nothing is in the ground yet.")).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Front" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Side" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Back" })).toBeVisible();
+  expect(garden.getByRole("heading", { name: "Patio" })).toBeVisible();
+  expect(garden.getAllByText("No Beds named yet.")).toHaveLength(4);
   await userEvent.click(garden.getByRole("link", { name: "Open the Catalog" }));
   expect(await garden.findByRole("heading", { name: "Catalog" })).toBeVisible();
+});
+
+test("the Gardener can find a Variety by name without dropping it from the Catalog", async () => {
+  const garden = openGarden({
+    catalog: [
+      {
+        name: "Contender peach",
+        category: "fruit trees",
+        kind: "peach",
+        fit: "strong",
+        why: "Sets fruit after our late frost.",
+      },
+      {
+        name: "Queenette Thai basil",
+        category: "herbs",
+        kind: "Thai basil",
+        fit: "strong",
+        why: "Thrives in humid heat.",
+      },
+    ],
+  });
+
+  await openAsGardener(garden);
+  await goToCatalog(garden);
+
+  expect(await garden.findByRole("link", { name: "fruit trees" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "herbs" })).toBeVisible();
+
+  await userEvent.type(garden.getByLabelText("Find a Variety"), "Contender");
+
+  expect(await garden.findByRole("link", { name: "Contender peach" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Queenette Thai basil" })).toBeNull();
+  expect(garden.queryByRole("link", { name: "fruit trees" })).toBeNull();
+
+  await userEvent.clear(garden.getByLabelText("Find a Variety"));
+
+  expect(await garden.findByRole("link", { name: "fruit trees" })).toBeVisible();
+  expect(garden.getByRole("link", { name: "herbs" })).toBeVisible();
+  expect(garden.queryByRole("link", { name: "Contender peach" })).toBeNull();
 });
 
 test("a second profile cannot be created", async () => {

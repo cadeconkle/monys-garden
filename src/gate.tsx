@@ -25,6 +25,8 @@ export function Gate({ growingPlace, gardenerExists, error, onOpen }: GateProps)
 
   return (
     <main className="gate">
+      <span className="gate-soil" aria-hidden="true" />
+      <span className="gate-bloom" aria-hidden="true" />
       <p className="place">{growingPlace}</p>
       <h1 className="hero-name">
         Mony&apos;s <span className="hero-garden">Garden</span>

@@ -16,7 +16,7 @@ export function Shell({ growingPlace, gardener, children }: ShellProps) {
           <p className="wordmark">Mony&apos;s Garden</p>
           <p className="place">{growingPlace}</p>
         </div>
-        <p className="gardener">{gardener.email}</p>
+        <p className="gardener mast-gardener">{gardener.email}</p>
       </header>
       <nav className="surfaces" aria-label="Garden surfaces">
         <NavLink to="/catalog">Catalog</NavLink>

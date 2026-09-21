@@ -1,15 +1,15 @@
 :root {
-  --path: #d4b78a;
-  --path-deep: #c4a46f;
-  --pine: #1c2616;
+  --path: #c9a36a;
+  --path-deep: #b0894e;
+  --pine: #142016;
   --shade: #4a3d2c;
-  --clay: #8e3424;
-  --crape: #d63d7a;
-  --basil: #1f6a3c;
-  --lawn: #5f7d32;
-  --storm: #3f6f7c;
-  --sky: #6d9db4;
-  --petal: #fff6f0;
+  --clay: #8a2e1c;
+  --crape: #c42a6a;
+  --basil: #1a5c34;
+  --lawn: #3d5a24;
+  --storm: #3a6570;
+  --sky: #7ba8b8;
+  --petal: #f6efe4;
   --focus: var(--crape);
   --display: "Big Shoulders Text", "Avenir Next Condensed", "Arial Narrow", sans-serif;
   --body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
@@ -33,7 +33,23 @@ html {
 body {
   margin: 0;
   color: var(--pine);
-  background: var(--path);
+  background-color: var(--path);
+  background-image:
+    radial-gradient(ellipse 90% 50% at 0% 0%, color-mix(in srgb, var(--sky) 42%, transparent), transparent 58%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 3px,
+      rgb(80 40 12 / 0.035) 3px,
+      rgb(80 40 12 / 0.035) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 5px,
+      rgb(90 50 20 / 0.04) 5px,
+      rgb(90 50 20 / 0.04) 6px
+    );
   font-family: var(--body);
   font-size: 1.125rem;
   line-height: 1.6;
@@ -41,7 +57,9 @@ body {
 
 @media (min-width: 721px) {
   body {
-    box-shadow: inset 12px 0 0 var(--clay);
+    box-shadow:
+      inset 14px 0 0 var(--clay),
+      inset 18px 0 0 color-mix(in srgb, var(--pine) 40%, var(--clay));
   }
 }
 
@@ -126,8 +144,43 @@ select:focus-visible {
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 40vh;
+  height: 42vh;
   background: linear-gradient(180deg, var(--sky) 0%, #8eb4c2 32%, transparent 100%);
+  pointer-events: none;
+  z-index: -2;
+}
+
+.gate-soil {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16vh;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--clay) 0 11px,
+      color-mix(in srgb, var(--pine) 18%, var(--clay)) 11px 12px
+    );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.gate-bloom {
+  position: absolute;
+  top: 9vh;
+  right: 9%;
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, var(--pine) 0 0.55rem, transparent 0.56rem),
+    radial-gradient(circle at 50% 18%, var(--crape) 0 1.15rem, transparent 1.16rem),
+    radial-gradient(circle at 82% 38%, var(--crape) 0 1.15rem, transparent 1.16rem),
+    radial-gradient(circle at 72% 78%, var(--crape) 0 1.15rem, transparent 1.16rem),
+    radial-gradient(circle at 28% 78%, var(--crape) 0 1.15rem, transparent 1.16rem),
+    radial-gradient(circle at 18% 38%, var(--crape) 0 1.15rem, transparent 1.16rem);
+  opacity: 0.72;
   pointer-events: none;
   z-index: -1;
 }
@@ -150,7 +203,8 @@ select:focus-visible {
 
 .gate-form,
 .list-form,
-.garden-form {
+.garden-form,
+.search {
   display: grid;
   gap: 0.9rem;
 }
@@ -161,7 +215,8 @@ select:focus-visible {
 
 .gate-form label,
 .list-form label,
-.garden-form label {
+.garden-form label,
+.search label {
   display: grid;
   gap: 0.3rem;
   color: var(--shade);
@@ -171,8 +226,10 @@ select:focus-visible {
 .gate-form input,
 .list-form input,
 .garden-form input,
-.garden-form select {
+.garden-form select,
+.search input {
   width: 100%;
+  min-height: 2.75rem;
   border: 0;
   border-bottom: 2px solid color-mix(in srgb, var(--clay) 55%, var(--path));
   border-radius: 0;
@@ -180,6 +237,17 @@ select:focus-visible {
   background: transparent;
   color: var(--pine);
   font: inherit;
+}
+
+.search {
+  margin: 0 0 1.15rem;
+  max-width: 28rem;
+}
+
+.search input {
+  font-size: 1.2rem;
+  padding: 0.45rem 0.15rem 0.35rem;
+  background: color-mix(in srgb, var(--petal) 40%, transparent);
 }
 
 .gate-form [role="alert"],
@@ -192,7 +260,8 @@ button {
   justify-self: start;
   margin-top: 0.35rem;
   border: 0;
-  padding: 0.78rem 1.05rem 0.7rem;
+  min-height: 2.75rem;
+  padding: 0.78rem 1.15rem 0.7rem;
   background: var(--basil);
   color: var(--petal);
   font-size: 1.15rem;
@@ -234,7 +303,7 @@ button.danger,
 
 .wordmark {
   margin: 0;
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 0.9;
@@ -272,6 +341,10 @@ button.danger,
   max-width: 36rem;
 }
 
+.garden-page {
+  max-width: 46rem;
+}
+
 .surface > p,
 .surface .lede {
   color: var(--shade);
@@ -290,6 +363,10 @@ button.danger,
   flex-wrap: wrap;
   gap: 0.4rem 1.15rem;
   margin: 0 0 1.15rem;
+}
+
+.favorites-and-lists a {
+  font-size: 1.2rem;
 }
 
 .trail {
@@ -334,6 +411,74 @@ button.danger,
 .rungs a:hover,
 .rungs a:focus-visible {
   color: var(--basil);
+}
+
+.rung-meta {
+  margin: 0.15rem 0 0;
+  color: var(--shade);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.variety-row {
+  display: grid;
+  grid-template-columns: 3.1rem 1fr;
+  gap: 0.2rem 0.85rem;
+  align-items: start;
+}
+
+.variety-row a,
+.variety-row .variety-facts {
+  grid-column: 2;
+}
+
+.rung-thumb,
+.portrait-fallback {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 3.1rem;
+  height: 3.8rem;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--clay) 35%, var(--path));
+}
+
+.portrait-fallback {
+  display: block;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--clay) 45%, var(--path));
+}
+
+.portrait-fallback[data-category="fruit trees"] {
+  background: linear-gradient(180deg, #e07a4a, #8a2e1c);
+}
+
+.portrait-fallback[data-category="herbs"] {
+  background: linear-gradient(180deg, #3d8a58, #1a5c34);
+}
+
+.portrait-fallback[data-category="vegetables"] {
+  background: linear-gradient(180deg, #6a8f32, #3d5a24);
+}
+
+.portrait-fallback[data-category="flowers"] {
+  background: linear-gradient(180deg, #d63d7a, #8a2e1c);
+}
+
+.portrait-fallback[data-category="shrubs"] {
+  background: linear-gradient(180deg, #c42a6a, #4a3d2c);
+}
+
+.portrait-fallback[data-category="trees"] {
+  background: linear-gradient(180deg, #c9a36a, #4a3d2c);
+}
+
+.portrait-fallback[data-category="vines"] {
+  background: linear-gradient(180deg, #7ba8b8, #1a5c34);
+}
+
+.portrait-fallback[data-fit="weak"] {
+  opacity: 0.55;
 }
 
 .variety-facts {
@@ -401,8 +546,8 @@ button.danger,
 
 .fit-filter input {
   appearance: none;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.15rem;
+  height: 1.15rem;
   margin: 0;
   border: 2px solid var(--clay);
   background: transparent;
@@ -450,19 +595,36 @@ button.danger,
 }
 
 .photoreal {
-  margin: 0.35rem -0.15rem 1.35rem;
+  margin: 0.35rem -1.2rem 1.35rem;
 }
 
 .photoreal img {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--shade);
+}
+
+.variety-hero {
+  margin: 0 0 0.35rem;
+}
+
+.variety-hero .variety-facts {
+  margin-bottom: 0.4rem;
+}
+
+.care-grid {
+  display: grid;
+  gap: 0.35rem 1.4rem;
 }
 
 .variety-page section h2,
 .when-to-plant h2,
 .buy-place h2,
-.suggestions h2 {
+.suggestions h2,
+.care-grid h2 {
   margin: 1.35rem 0 0.35rem;
   font-size: 1.35rem;
 }
@@ -489,8 +651,23 @@ button.danger,
   box-shadow: inset 0 -0.16em 0 color-mix(in srgb, var(--crape) 70%, var(--path));
 }
 
-.rungs.shops li {
+.rungs.shops li,
+.shop-card {
   margin: 0 0 1.6rem;
+  padding: 0 0 0 0.85rem;
+  border-left: 8px solid var(--lawn);
+}
+
+.shop-card[data-kind="Asian grocery"] {
+  border-left-color: var(--crape);
+}
+
+.shop-card[data-kind="American grocery"] {
+  border-left-color: var(--basil);
+}
+
+.shop-card[data-kind="plant shop"] {
+  border-left-color: var(--lawn);
 }
 
 .rungs.shops h2 {
@@ -513,6 +690,32 @@ button.danger,
   margin: 0 0 1.7rem;
 }
 
+.weather-strip {
+  padding-bottom: 0.2rem;
+}
+
+.today-temps {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  margin: 0.15rem 0 0.35rem;
+  font-family: var(--display);
+  line-height: 0.8;
+}
+
+.temp-high {
+  font-size: clamp(3.2rem, 12vw, 4.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--pine);
+}
+
+.temp-low {
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  font-weight: 700;
+  color: var(--storm);
+}
+
 .care {
   position: relative;
   margin: 0 0 1.7rem;
@@ -532,7 +735,8 @@ button.danger,
 .forecast h2,
 .care h2,
 .areas h2,
-.garden-form h2 {
+.garden-form h2,
+.yard-plot h2 {
   margin: 0 0 0.45rem;
   font-size: clamp(1.6rem, 5vw, 2.1rem);
 }
@@ -566,7 +770,8 @@ button.danger,
   color: var(--clay);
 }
 
-.care li {
+.care li,
+.care-item {
   margin: 0 0 1.2rem;
 }
 
@@ -579,11 +784,53 @@ button.danger,
   margin-top: 0;
 }
 
+.yard {
+  display: grid;
+  gap: 1rem;
+  margin: 0 0 1.8rem;
+}
+
+.yard-plot {
+  padding: 0.9rem 0.95rem 1rem;
+  background: color-mix(in srgb, var(--petal) 22%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--clay) 38%, var(--path));
+}
+
+.yard-plot[data-area="Front"] {
+  box-shadow:
+    inset 6px 0 0 var(--crape),
+    inset 0 0 0 2px color-mix(in srgb, var(--clay) 38%, var(--path));
+}
+
+.yard-plot[data-area="Side"] {
+  box-shadow:
+    inset 6px 0 0 var(--storm),
+    inset 0 0 0 2px color-mix(in srgb, var(--clay) 38%, var(--path));
+}
+
+.yard-plot[data-area="Back"] {
+  box-shadow:
+    inset 6px 0 0 var(--basil),
+    inset 0 0 0 2px color-mix(in srgb, var(--clay) 38%, var(--path));
+}
+
+.yard-plot[data-area="Patio"] {
+  box-shadow:
+    inset 6px 0 0 var(--path-deep),
+    inset 0 0 0 2px color-mix(in srgb, var(--clay) 38%, var(--path));
+}
+
+.plot-empty {
+  margin: 0;
+  color: var(--shade);
+}
+
 .areas section {
   margin: 0;
 }
 
-.bed {
+.bed,
+.bed-card {
   margin: 0 0 1.1rem;
 }
 
@@ -593,6 +840,13 @@ button.danger,
 
 .plantings p {
   margin: 0 0 0.35rem;
+}
+
+.plantings a {
+  font-size: clamp(1.25rem, 4vw, 1.55rem);
+  font-weight: 800;
+  box-shadow: none;
+  color: var(--pine);
 }
 
 .plantings button {
@@ -646,6 +900,18 @@ button.danger,
     margin-left: 0;
     margin-right: 0;
   }
+
+  .yard {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .care-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .today-temps {
+    margin-bottom: 0.2rem;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -655,6 +921,10 @@ button.danger,
 
   .hero-name {
     animation: sign-rise 0.7s ease-out both;
+  }
+
+  .gate-bloom {
+    animation: bloom-settle 0.9s ease-out 0.15s both;
   }
 }
 
@@ -685,6 +955,18 @@ button.danger,
 
   to {
     opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bloom-settle {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+
+  to {
+    opacity: 0.72;
     transform: none;
   }
 }

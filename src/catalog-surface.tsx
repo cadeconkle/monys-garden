@@ -30,6 +30,7 @@ export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
   const [search] = useSearchParams();
   const visible = visibleVarieties(catalog, search);
   const categories = categoriesIn(visible);
+  const finding = queryNeedle(search) !== "";
 
   return (
     <main className="surface">
@@ -39,13 +40,22 @@ export function CatalogIndex({ catalog }: { catalog: readonly Variety[] }) {
       <CatalogFilters />
       {catalog.length === 0 ? (
         <p>No Varieties yet. Every Variety that can live at this Growing place will land here.</p>
+      ) : finding && visible.length === 0 ? (
+        <p>No Varieties match these filters. They are still in the Catalog.</p>
+      ) : finding ? (
+        <ul className="rungs">
+          {visible.map((variety) => (
+            <VarietyRung key={variety.name} variety={variety} />
+          ))}
+        </ul>
       ) : categories.length === 0 ? (
         <p>No Varieties match these filters. They are still in the Catalog.</p>
       ) : (
-        <ul className="rungs">
+        <ul className="rungs category-rungs">
           {categories.map((category) => (
             <li key={category}>
               <CatalogLink path={`/catalog/${slugFor(category)}`}>{category}</CatalogLink>
+              <p className="rung-meta">{rungCount(kindsIn(visible, category).length, "kind")}</p>
             </li>
           ))}
         </ul>
@@ -80,6 +90,9 @@ export function CategoryPage({ catalog }: { catalog: readonly Variety[] }) {
           {kinds.map((kind) => (
             <li key={kind}>
               <CatalogLink path={`/catalog/${slugFor(category)}/${slugFor(kind)}`}>{kind}</CatalogLink>
+              <p className="rung-meta">
+                {rungCount(varietiesOf(visible, category, kind).length, "variety")}
+              </p>
             </li>
           ))}
         </ul>
@@ -114,14 +127,7 @@ export function KindPage({ catalog }: { catalog: readonly Variety[] }) {
       ) : (
         <ul className="rungs">
           {listed.map((variety) => (
-            <li key={variety.name}>
-              <CatalogLink
-                path={`/catalog/${slugFor(category)}/${slugFor(kind)}/${slugFor(variety.name)}`}
-              >
-                {variety.name}
-              </CatalogLink>
-              <VarietyFacts variety={variety} />
-            </li>
+            <VarietyRung key={variety.name} variety={variety} />
           ))}
         </ul>
       )}
@@ -169,14 +175,16 @@ export function VarietyPage({
   return (
     <main className="surface variety-page">
       <Trail category={category} kind={kind} />
-      <h1>{variety.name}</h1>
+      <header className="variety-hero">
+        <h1>{variety.name}</h1>
+        <VarietyFacts variety={variety} sentence />
+      </header>
       {finish ? (
         <figure className="photoreal">
           <img src={finish.photoreal.src} alt={finish.photoreal.alt} />
         </figure>
       ) : null}
       <FavoritesAndListsNav />
-      <VarietyFacts variety={variety} sentence />
       <Heart
         variety={variety}
         favorites={favorites}
@@ -234,40 +242,42 @@ function BuyPlaceFacts({ buyPlace }: { buyPlace: BuyPlace }) {
 function FinishedCare({ finish }: { finish: VarietyFinish }) {
   return (
     <div className="finished-care">
-      <section>
-        <h2>Winter fate</h2>
-        <p>{finish.winterFate}</p>
-      </section>
-      <section>
-        <h2>Difficulty</h2>
-        <p>{finish.difficulty.level}</p>
-        <p>{finish.difficulty.why}</p>
-      </section>
-      <section>
-        <h2>Harvest</h2>
-        <p>{finish.harvest.level}</p>
-        <p>{finish.harvest.why}</p>
-      </section>
-      <section>
-        <h2>Time to harvest</h2>
-        <p>{finish.timeToHarvest}</p>
-      </section>
-      <section>
-        <h2>Soil</h2>
-        <p>{finish.soil}</p>
-      </section>
-      {finish.techniques.length > 0 ? (
+      <div className="care-grid">
         <section>
-          <h2>Techniques</h2>
-          <ul className="rungs">
-            {finish.techniques.map((name) => (
-              <li key={name}>
-                <CatalogLink path={`/techniques/${slugFor(name)}`}>{name}</CatalogLink>
-              </li>
-            ))}
-          </ul>
+          <h2>Winter fate</h2>
+          <p>{finish.winterFate}</p>
         </section>
-      ) : null}
+        <section>
+          <h2>Difficulty</h2>
+          <p>{finish.difficulty.level}</p>
+          <p>{finish.difficulty.why}</p>
+        </section>
+        <section>
+          <h2>Harvest</h2>
+          <p>{finish.harvest.level}</p>
+          <p>{finish.harvest.why}</p>
+        </section>
+        <section>
+          <h2>Time to harvest</h2>
+          <p>{finish.timeToHarvest}</p>
+        </section>
+        <section>
+          <h2>Soil</h2>
+          <p>{finish.soil}</p>
+        </section>
+        {finish.techniques.length > 0 ? (
+          <section>
+            <h2>Techniques</h2>
+            <ul className="rungs">
+              {finish.techniques.map((name) => (
+                <li key={name}>
+                  <CatalogLink path={`/techniques/${slugFor(name)}`}>{name}</CatalogLink>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -429,6 +439,25 @@ function Suggestions({ catalog, variety }: { catalog: readonly Variety[]; variet
   );
 }
 
+function VarietyRung({ variety }: { variety: Variety }) {
+  return (
+    <li>
+      <div className="variety-row">
+        {!showsFinish(variety) ? (
+          <span
+            className="portrait-fallback"
+            aria-hidden="true"
+            data-category={variety.category}
+            data-fit={variety.fit}
+          />
+        ) : null}
+        <CatalogLink path={varietyPath(variety)}>{variety.name}</CatalogLink>
+        <VarietyFacts variety={variety} />
+      </div>
+    </li>
+  );
+}
+
 function VarietyFacts({ variety, sentence }: { variety: Variety; sentence?: boolean }) {
   const kitchen = kitchenUseLine(variety);
   return (
@@ -482,10 +511,40 @@ function CatalogLink({ path, children }: { path: string; children: string }) {
 
 function CatalogFilters() {
   return (
-    <div className="filters">
-      <FitFilter />
-      <KitchenFilter />
-      <OrnamentalFilter />
+    <>
+      <FindVarietySearch />
+      <div className="filters">
+        <FitFilter />
+        <KitchenFilter />
+        <OrnamentalFilter />
+      </div>
+    </>
+  );
+}
+
+function FindVarietySearch() {
+  const [params, setParams] = useSearchParams();
+  const q = params.get("q") ?? "";
+
+  return (
+    <div className="search">
+      <label>
+        Find a Variety
+        <input
+          type="search"
+          value={q}
+          onChange={(event) => {
+            const next = new URLSearchParams(params);
+            const value = event.target.value;
+            if (value) {
+              next.set("q", value);
+            } else {
+              next.delete("q");
+            }
+            setParams(next, { replace: true });
+          }}
+        />
+      </label>
     </div>
   );
 }
@@ -583,21 +642,36 @@ function visibleVarieties(catalog: readonly Variety[], params: URLSearchParams):
   const hidden = hiddenFits(params);
   const hiddenKitchen = hiddenTraditions(params);
   const hideOrnamental = ornamentalHidden(params);
+  const needle = queryNeedle(params);
   return catalog.filter((variety) => {
     if (hidden.includes(variety.fit)) {
       return false;
     }
     if (variety.kitchenTradition === "none") {
-      return !hideOrnamental;
-    }
-    if (
+      if (hideOrnamental) {
+        return false;
+      }
+    } else if (
       variety.kitchenTradition &&
       hiddenKitchen.includes(variety.kitchenTradition)
     ) {
       return false;
     }
+    if (needle && !matchesVarietyQuery(variety, needle)) {
+      return false;
+    }
     return true;
   });
+}
+
+function queryNeedle(params: URLSearchParams): string {
+  return (params.get("q") ?? "").trim().toLowerCase();
+}
+
+function matchesVarietyQuery(variety: Variety, needle: string): boolean {
+  return [variety.name, variety.kind, variety.category, variety.why].some((field) =>
+    field.toLowerCase().includes(needle),
+  );
 }
 
 function hiddenFits(params: URLSearchParams): Fit[] {
@@ -614,6 +688,13 @@ function hiddenTraditions(params: URLSearchParams): KitchenTradition[] {
 
 function ornamentalHidden(params: URLSearchParams): boolean {
   return params.get("hideOrnamental") === "1";
+}
+
+function rungCount(count: number, unit: "kind" | "variety"): string {
+  if (unit === "kind") {
+    return count === 1 ? "1 kind" : `${count} kinds`;
+  }
+  return count === 1 ? "1 variety" : `${count} varieties`;
 }
 
 function Missing({ rung }: { rung: "Category" | "Kind" | "Variety" }) {

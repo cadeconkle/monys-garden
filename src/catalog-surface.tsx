@@ -440,17 +440,21 @@ function Suggestions({ catalog, variety }: { catalog: readonly Variety[]; variet
 }
 
 function VarietyRung({ variety }: { variety: Variety }) {
+  const portrait = showsFinish(variety) ? variety.finish?.photoreal : undefined;
+
   return (
     <li>
       <div className="variety-row">
-        {!showsFinish(variety) ? (
+        {portrait ? (
+          <img className="rung-thumb" src={portrait.src} alt="" />
+        ) : (
           <span
             className="portrait-fallback"
             aria-hidden="true"
             data-category={variety.category}
             data-fit={variety.fit}
           />
-        ) : null}
+        )}
         <CatalogLink path={varietyPath(variety)}>{variety.name}</CatalogLink>
         <VarietyFacts variety={variety} />
       </div>

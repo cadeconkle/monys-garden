@@ -175,6 +175,8 @@ export function GardenApp({
   if (!ready || (gardener && !gardenReady)) {
     return (
       <main className="gate">
+        <span className="gate-soil" aria-hidden="true" />
+        <span className="gate-bloom" aria-hidden="true" />
         <p className="place">{household.growingPlace.name}</p>
         <h1 className="hero-name">
           Mony&apos;s <span className="hero-garden">Garden</span>

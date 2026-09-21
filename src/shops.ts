@@ -37,4 +37,18 @@ export const curatedShops: Shop[] = [
     website: "https://www.logansgardenhut.com/",
     maps: "https://www.google.com/maps/search/?api=1&query=Logan%27s+Garden+Hut+1004+Old+Honeycutt+Road+Fuquay-Varina+NC",
   },
+  {
+    name: "Garden Supply Company",
+    kind: "plant shop",
+    why: "Trees, shrubs, and Bed soil from Cary for this Garden.",
+    website: "https://www.gardensupplyco.com/",
+    maps: "https://www.google.com/maps/search/?api=1&query=Garden+Supply+Company+1421+Old+Apex+Road+Cary+NC",
+  },
+  {
+    name: "Fairview Garden Center",
+    kind: "plant shop",
+    why: "Trees and shrubs grown for this climate, a short drive up Holly Springs Road.",
+    website: "https://fairviewgardencenter.com/",
+    maps: "https://www.google.com/maps/search/?api=1&query=Fairview+Garden+Center+8224+Holly+Springs+Road+Raleigh+NC",
+  },
 ];
